@@ -7,8 +7,15 @@ export const decimalString = (scale: number) =>
   z
     .union([z.string(), z.number()])
     .transform((v) => String(v).trim())
-    .refine((v) => new RegExp(`^\\d+(\\.\\d{1,${scale}})?$`).test(v), {
-      message: `Debe ser un número positivo con hasta ${scale} decimales`,
+    .superRefine((v, ctx) => {
+      if (v === '') {
+        ctx.addIssue({ code: 'custom', message: 'Requerido' });
+      } else if (!new RegExp(`^\\d+(\\.\\d{1,${scale}})?$`).test(v)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `Ingresa un número positivo con hasta ${scale} decimales`,
+        });
+      }
     });
 
 export const positiveDecimal = (scale: number) =>

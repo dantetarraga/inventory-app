@@ -29,7 +29,7 @@ export function RowActions({
   const [confirm, setConfirm] = useState(false);
   if (!canEdit) return null;
   return (
-    <div className="flex justify-end gap-1">
+    <div className="flex justify-end gap-0.5">
       {onEdit && <IconButton size="icon-sm" label="Editar" icon={<Pencil />} onClick={onEdit} />}
       {onDelete && (
         <>

@@ -41,16 +41,16 @@ export function CardContent({ className, ...props }: React.ComponentProps<'div'>
 }
 
 const badgeVariants = cva(
-  'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap',
+  'inline-flex items-center gap-1 whitespace-nowrap rounded-md px-1.5 py-0.5 text-[12px] font-medium ring-1 ring-inset [&_svg]:size-3',
   {
     variants: {
       variant: {
-        default: 'bg-accent text-accent-foreground',
-        secondary: 'bg-secondary text-secondary-foreground',
-        success: 'bg-success/15 text-success',
-        warning: 'bg-warning/20 text-amber-700 dark:text-warning',
-        destructive: 'bg-destructive/15 text-destructive',
-        outline: 'border text-muted-foreground',
+        default: 'bg-primary/10 text-primary ring-primary/25',
+        secondary: 'bg-muted text-muted-foreground ring-border',
+        success: 'bg-success/10 text-success ring-success/25',
+        warning: 'bg-warning/15 text-amber-700 ring-warning/35 dark:text-warning',
+        destructive: 'bg-destructive/10 text-destructive ring-destructive/25',
+        outline: 'text-muted-foreground ring-border',
       },
     },
     defaultVariants: { variant: 'default' },

@@ -35,9 +35,7 @@ export function Input({ className, type, leadingIcon, ...props }: InputProps) {
 }
 
 export function Textarea({ className, ...props }: React.ComponentProps<'textarea'>) {
-  return (
-    <textarea className={cn(fieldClass, 'min-h-20 resize-y py-2', className)} {...props} />
-  );
+  return <textarea className={cn(fieldClass, 'min-h-20 resize-y py-2', className)} {...props} />;
 }
 
 export function Label({ className, ...props }: React.ComponentProps<typeof LabelPrimitive.Root>) {

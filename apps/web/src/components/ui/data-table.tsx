@@ -1,15 +1,21 @@
 import * as React from 'react';
 import { flexRender, getCoreRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table';
-import { ChevronLeft, ChevronRight, Inbox } from 'lucide-react';
+import { ChevronLeft, ChevronRight, PackageOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { IconButton } from './button';
 import { Skeleton } from './card';
+
+const actionsCellClass =
+  'transition-opacity duration-150 [@media(hover:hover)]:opacity-45 group-hover/row:opacity-100 group-focus-within/row:opacity-100';
+
+type ColumnMeta = { className?: string };
 
 interface DataTableProps<T> {
   columns: ColumnDef<T, unknown>[];
   data: T[] | undefined;
   loading?: boolean;
   emptyMessage?: string;
+  emptyAction?: React.ReactNode;
   page?: number;
   pageSize?: number;
   total?: number;
@@ -22,6 +28,7 @@ export function DataTable<T>({
   data,
   loading,
   emptyMessage = 'No hay registros',
+  emptyAction,
   page,
   pageSize,
   total,
@@ -37,22 +44,24 @@ export function DataTable<T>({
   });
 
   const pageCount = total !== undefined && pageSize ? Math.max(1, Math.ceil(total / pageSize)) : 1;
+  const from = page && pageSize ? (page - 1) * pageSize + 1 : 1;
+  const to = page && pageSize && total !== undefined ? Math.min(page * pageSize, total) : total;
+  const metaClass = (meta: unknown) => (meta as ColumnMeta | undefined)?.className;
 
   return (
-    <div className="overflow-hidden rounded-[10px] bg-card">
+    <div className="overflow-hidden rounded-xl border bg-card">
       <div className="overflow-x-auto">
-        <table className="w-full caption-bottom text-sm">
-          <thead>
+        <table className="w-full text-[14px]">
+          <thead className="bg-muted/45 dark:bg-white/[0.025]">
             {table.getHeaderGroups().map((hg) => (
-              <tr key={hg.id} className="border-b-2 border-[rgba(115,115,115,0.32)]">
+              <tr key={hg.id} className="border-b">
                 {hg.headers.map((header) => (
                   <th
                     key={header.id}
                     scope="col"
                     className={cn(
-                      'h-10 px-4 text-left align-middle text-sm font-medium text-foreground',
-                      (header.column.columnDef.meta as { className?: string } | undefined)
-                        ?.className,
+                      'h-10 whitespace-nowrap px-4 text-left align-middle text-[12.5px] font-medium text-muted-foreground',
+                      metaClass(header.column.columnDef.meta),
                     )}
                   >
                     {header.isPlaceholder
@@ -65,38 +74,40 @@ export function DataTable<T>({
           </thead>
           <tbody>
             {loading && !data ? (
-              Array.from({ length: 5 }, (_, i) => (
+              Array.from({ length: 6 }, (_, i) => (
                 <tr key={i} className="border-b last:border-0">
                   {columns.map((_, j) => (
-                    <td key={j} className="px-4 py-3">
-                      <Skeleton className="h-4 w-full max-w-40" />
+                    <td key={j} className="h-[52px] px-4">
+                      <Skeleton className={cn('h-3.5', j === 0 ? 'w-40' : 'w-16')} />
                     </td>
                   ))}
                 </tr>
               ))
             ) : table.getRowModel().rows.length === 0 ? (
               <tr>
-                <td
-                  colSpan={columns.length}
-                  className="px-4 py-12 text-center text-muted-foreground"
-                >
-                  <Inbox className="mx-auto mb-2 size-8 opacity-50" aria-hidden />
-                  {emptyMessage}
+                <td colSpan={columns.length} className="px-6 py-14">
+                  <div className="mx-auto grid max-w-sm justify-items-center gap-3 text-center">
+                    <span className="grid size-12 place-items-center rounded-full bg-muted text-muted-foreground">
+                      <PackageOpen className="size-6" aria-hidden />
+                    </span>
+                    <p className="text-[14px] text-muted-foreground">{emptyMessage}</p>
+                    {emptyAction}
+                  </div>
                 </td>
               </tr>
             ) : (
               table.getRowModel().rows.map((row) => (
                 <tr
                   key={row.id}
-                  className="border-b border-[rgba(161,161,161,0.32)] transition-colors last:border-0 even:bg-black/[0.025] dark:even:bg-white/[0.03] hover:bg-primary/10"
+                  className="group/row border-b transition-colors last:border-0 hover:bg-row-hover"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <td
                       key={cell.id}
                       className={cn(
-                        'px-4 py-2.5 align-middle',
-                        (cell.column.columnDef.meta as { className?: string } | undefined)
-                          ?.className,
+                        'h-[52px] px-4 py-2 align-middle',
+                        cell.column.id === 'actions' && actionsCellClass,
+                        metaClass(cell.column.columnDef.meta),
                       )}
                     >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -109,25 +120,25 @@ export function DataTable<T>({
         </table>
       </div>
       {onPageChange && page !== undefined && total !== undefined && total > 0 && (
-        <div className="flex items-center justify-between gap-2 border-t px-4 py-2 text-sm text-muted-foreground">
-          <span>
-            {total} registro{total === 1 ? '' : 's'}
+        <div className="flex items-center justify-between gap-3 border-t px-4 py-2.5 text-[13px] text-muted-foreground">
+          <span className="tabular">
+            {from}–{to} de {total}
           </span>
-          <div className="flex items-center gap-2">
-            <span>
+          <div className="flex items-center gap-1.5">
+            <span className="tabular mr-1">
               Página {page} de {pageCount}
             </span>
             <IconButton
+              variant="outline"
               size="icon-sm"
-              className="border"
               label="Página anterior"
               icon={<ChevronLeft />}
               disabled={page <= 1}
               onClick={() => onPageChange(page - 1)}
             />
             <IconButton
+              variant="outline"
               size="icon-sm"
-              className="border"
               label="Página siguiente"
               icon={<ChevronRight />}
               disabled={page >= pageCount}

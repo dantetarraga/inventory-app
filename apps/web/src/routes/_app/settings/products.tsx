@@ -118,7 +118,7 @@ function ProductsPage() {
         header: () => <span className="sr-only">Acciones</span>,
         meta: { className: 'w-32' },
         cell: ({ row }) => (
-          <div className="flex justify-end gap-1">
+          <div className="flex justify-end gap-0.5">
             {canKardex && (
               <Button variant="ghost" size="icon-sm" asChild>
                 <Link
@@ -210,8 +210,19 @@ function ProductsPage() {
         getRowId={(r) => String(r.id)}
         emptyMessage={
           q || categoryId || lowStock
-            ? 'Ningún producto coincide con los filtros'
-            : 'Aún no registras productos'
+            ? 'Ningún producto coincide con los filtros.'
+            : 'Aún no registras productos. Crea el primero para empezar a controlar su stock.'
+        }
+        emptyAction={
+          q || categoryId || lowStock ? (
+            <Button variant="outline" size="sm" onClick={() => navigate({ search: {} })}>
+              Limpiar filtros
+            </Button>
+          ) : (
+            <Button size="sm" onClick={editor.openNew}>
+              <Plus /> Nuevo producto
+            </Button>
+          )
         }
       />
       <ProductDialog

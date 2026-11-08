@@ -59,7 +59,7 @@ function WarehousesPage() {
         header: () => <span className="sr-only">Acciones</span>,
         meta: { className: 'w-36' },
         cell: ({ row }) => (
-          <div className="flex justify-end gap-1">
+          <div className="flex justify-end gap-0.5">
             {!row.original.isDefault && (
               <IconButton
                 size="icon-sm"
