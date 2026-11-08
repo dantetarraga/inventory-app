@@ -1,0 +1,32 @@
+{
+  "name": "stockpro",
+  "type": "module",
+  "private": true,
+  "packageManager": "pnpm@10.18.0",
+  "engines": {
+    "node": ">=20.19"
+  },
+  "scripts": {
+    "dev": "pnpm --parallel --filter @stockpro/api --filter @stockpro/web dev",
+    "build": "pnpm -r build",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "db:up": "docker compose up -d db",
+    "db:generate": "pnpm --filter @stockpro/api db:generate",
+    "db:migrate": "pnpm --filter @stockpro/api db:migrate",
+    "db:seed": "pnpm --filter @stockpro/api db:seed",
+    "e2e": "pnpm --filter @stockpro/web e2e"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^16.5.0",
+    "prettier": "^3.9.10",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.72.1"
+  }
+}

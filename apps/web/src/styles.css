@@ -1,0 +1,284 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Design tokens taken from the original StockPRO theme (src/styles/themes.jsx):
+ * Light/Dark palettes, orange accent (bg5 #f76f3a), Poppins.
+ */
+/* `.theme-light` forces the light palette inside a subtree (e.g. the always-white login card). */
+:root,
+.theme-light {
+  --radius: 10px;
+  --background: #edf3fb; /* bgtotal */
+  --foreground: #202020; /* text */
+  --card: #ffffff; /* bgcards */
+  --card-foreground: #202020;
+  --popover: #ffffff;
+  --popover-foreground: #202020;
+  --primary: #f76f3a; /* bg5 */
+  --primary-foreground: #000000;
+  --brand-orange: #fc6b32; /* login banner */
+  --brand-soft: #f7b272; /* whiteBg */
+  --secondary: #f2f2f2; /* bgAlpha */
+  --secondary-foreground: #202020;
+  --muted: #eaeaea; /* bg4 */
+  --muted-foreground: #5f5f5f;
+  --accent: #f2f2f2;
+  --accent-foreground: #202020;
+  --destructive: #f54e41; /* colorError */
+  --destructive-foreground: #ffffff;
+  --success: #53b257; /* colorIngresos */
+  --warning: #e3a008;
+  --border: #e2e2e2;
+  --input: #9b9b9b; /* underline inputs */
+  --ring: #f76f3a;
+  --sidebar: #ffffff; /* bg */
+  --sidebar-toggle: #eeeeee; /* bgtgderecha */
+  --grid-line: rgba(102, 102, 102, 0.2); /* rgbafondoanimado */
+  /* Data-viz categorical slots (validated pair) */
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --chart-grid: #e2e2e2;
+}
+
+.dark {
+  --background: #1c1c1e;
+  --foreground: #ffffff;
+  --card: #171717;
+  --card-foreground: #f0f0f0;
+  --popover: #2c2c2e; /* bg3 */
+  --popover-foreground: #ffffff;
+  --brand-soft: #f59674;
+  --secondary: #2c2c2e;
+  --secondary-foreground: #ffffff;
+  --muted: #2c2c2e;
+  --muted-foreground: #b7b7b7; /* colorSubtitle */
+  --accent: rgba(0, 0, 0, 0.3);
+  --accent-foreground: #ffffff;
+  --border: #414244;
+  --input: #656565;
+  --sidebar: #272727;
+  --sidebar-toggle: #21252b;
+  --grid-line: rgba(198, 198, 198, 0.2);
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --chart-grid: #333336;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-brand: var(--brand-orange);
+  --color-brand-soft: var(--brand-soft);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-toggle: var(--sidebar-toggle);
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: var(--radius);
+  --radius-xl: 20px;
+  --font-sans: 'Poppins', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --animate-float: float 1.7s ease-in-out infinite alternate;
+  --animate-shake: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  @keyframes shake {
+    10%,
+    90% {
+      transform: translateX(-1px);
+    }
+    20%,
+    80% {
+      transform: translateX(2px);
+    }
+    30%,
+    50%,
+    70% {
+      transform: translateX(-4px);
+    }
+    40%,
+    60% {
+      transform: translateX(4px);
+    }
+  }
+  @keyframes float {
+    0% {
+      transform: translateY(0);
+    }
+    100% {
+      transform: translateY(6px);
+    }
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+  /* Original scrollbar look */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(84, 84, 84, 0.5);
+    border-radius: 10px;
+  }
+}
+
+@layer components {
+  /* Grid-lines background used by the original configuration and home screens. */
+  .bg-grid {
+    background-image:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: 26px 26px;
+    background-position: center;
+  }
+}
+
+/* ---------- Browser autofill ----------
+ * Chrome/Edge paint autofilled fields with a blue/yellow background and switch to the system font.
+ * Keep our transparent background, text color and Poppins instead.
+ */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-text-fill-color: var(--foreground);
+  caret-color: var(--foreground);
+  /* Delays the UA background change "forever", so the field stays transparent. */
+  transition:
+    background-color 600000s 0s,
+    color 600000s 0s;
+}
+input:-webkit-autofill::first-line {
+  font-family: 'Poppins', ui-sans-serif, system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+}
+input:autofill {
+  background-color: transparent;
+}
+
+/* ---------- View transitions ----------
+ * Login ⇄ registro: the card resizes smoothly and the form slides in the navigation direction.
+ * Between app pages: only the main content fades/slides; sidebar and header stay put.
+ */
+.auth-card {
+  view-transition-name: auth-card;
+}
+.auth-form {
+  view-transition-name: auth-form;
+}
+#main {
+  view-transition-name: page;
+}
+
+::view-transition-group(auth-card) {
+  animation-duration: 380ms;
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+::view-transition-old(auth-form) {
+  animation: 200ms ease-in both vt-out-left;
+}
+::view-transition-new(auth-form) {
+  animation: 340ms cubic-bezier(0.2, 0.8, 0.2, 1) 60ms both vt-in-right;
+}
+html:active-view-transition-type(auth-back)::view-transition-old(auth-form) {
+  animation-name: vt-out-right;
+}
+html:active-view-transition-type(auth-back)::view-transition-new(auth-form) {
+  animation-name: vt-in-left;
+}
+
+::view-transition-old(page) {
+  animation: 160ms ease-in both vt-fade-out;
+}
+::view-transition-new(page) {
+  animation: 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both vt-in-up;
+}
+
+@keyframes vt-out-left {
+  to {
+    opacity: 0;
+    transform: translateX(-32px);
+  }
+}
+@keyframes vt-out-right {
+  to {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+}
+@keyframes vt-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+}
+@keyframes vt-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-32px);
+  }
+}
+@keyframes vt-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes vt-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+/* Browsers without View Transitions still get an entrance animation. */
+@supports not (view-transition-name: none) {
+  .auth-form > * {
+    animation: vt-in-right 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-float,
+  .animate-shake {
+    animation: none;
+  }
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
