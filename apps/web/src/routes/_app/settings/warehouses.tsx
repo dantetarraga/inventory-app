@@ -7,7 +7,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { Plus, Star } from 'lucide-react';
 import { upsertWarehouseSchema, type UpsertWarehouseInput, type Warehouse } from '@stockpro/shared';
 import { listSearchSchema, PAGE_SIZE, RowActions, useEditor } from '@/components/crud';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
 import { Badge } from '@/components/ui/card';
 import { DataTable } from '@/components/ui/data-table';
 import {
@@ -61,16 +61,12 @@ function WarehousesPage() {
         cell: ({ row }) => (
           <div className="flex justify-end gap-1">
             {!row.original.isDefault && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-8"
-                aria-label="Marcar como predeterminado"
-                title="Marcar como predeterminado"
+              <IconButton
+                size="icon-sm"
+                label="Marcar como predeterminado"
+                icon={<Star />}
                 onClick={() => setDefault.mutate(row.original.id)}
-              >
-                <Star />
-              </Button>
+              />
             )}
             <RowActions
               onEdit={() => editor.openEdit(row.original)}
@@ -163,7 +159,7 @@ function WarehouseDialog({
           <Field label="Nombre" htmlFor="wh-name" error={errors.name?.message}>
             <Input autoFocus {...form.register('name')} />
           </Field>
-          <Field label="Dirección (opcional)" htmlFor="wh-address" error={errors.address?.message}>
+          <Field label="Dirección" optional htmlFor="wh-address" error={errors.address?.message}>
             <Input {...form.register('address')} />
           </Field>
           <DialogFooter>

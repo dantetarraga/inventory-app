@@ -5,7 +5,6 @@ import { decimalString, paginationQuerySchema } from './common';
 export const movementSchema = z.object({
   id: z.number().int(),
   type: z.enum(MOVEMENT_TYPES),
-  /** Signed delta applied to stock. */
   delta: z.string(),
   balanceAfter: z.string(),
   unitCost: z.string().nullable(),
@@ -21,9 +20,7 @@ export const createMovementSchema = z
   .object({
     type: z.enum(MOVEMENT_TYPES),
     productId: z.number().int().positive(),
-    /** Defaults to the company's default warehouse. */
     warehouseId: z.number().int().positive().optional(),
-    /** "in"/"out": quantity moved (> 0). "adjust": the new counted stock (>= 0). */
     quantity: decimalString(3),
     unitCost: decimalString(2).nullable().optional(),
     note: z.string().trim().max(300).nullable().optional(),

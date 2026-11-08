@@ -5,7 +5,7 @@ import { createDb } from './client';
 
 export const MIGRATIONS_FOLDER = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
-  // src/db -> ../../drizzle  |  dist -> ../drizzle
+  // src/db/migrate.ts → ../../drizzle; bundled dist/migrate.js → ../drizzle
   import.meta.url.includes('/dist/') ? '../drizzle' : '../../drizzle',
 );
 

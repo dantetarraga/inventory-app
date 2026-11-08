@@ -16,7 +16,6 @@ export const productRoutes: FastifyPluginAsyncZod = async (app) => {
   const service = createProductService(app.db);
   const tags = ['products'];
   const canWrite = app.requirePermission('products');
-  // Product lookup is also needed by kardex and report screens.
   const canRead = async (req: { auth: { permissions: ReadonlySet<string> } }) => {
     const p = req.auth.permissions;
     if (!p.has('products') && !p.has('kardex') && !p.has('reports')) throw AppError.forbidden();

@@ -1,4 +1,3 @@
-/** Permission modules. Codes are stable identifiers shared by DB, API and UI. */
 export const MODULES = [
   { code: 'products', name: 'Productos' },
   { code: 'kardex', name: 'Kardex' },

@@ -15,6 +15,7 @@ import { likePattern, pageOffset } from '../../lib/pagination';
 import type { AuthContext } from '../../plugins/auth';
 import { effectivePermissions } from '../../plugins/auth';
 import { hashPassword } from '../auth/service';
+import { dates } from '@stockpro/shared';
 
 const userColumns = {
   id: users.id,
@@ -45,7 +46,7 @@ async function withPermissions(
     );
   return rows.map((r) => ({
     ...r,
-    createdAt: r.createdAt.toISOString(),
+    createdAt: dates.toISO(r.createdAt),
     permissions: effectivePermissions(
       r.role,
       perms.filter((p) => p.userId === r.id).map((p) => p.module),
@@ -163,7 +164,6 @@ export function createUserService(db: Database) {
         const current = await get(ctx, id, tx);
         assertCanManage(ctx, current.role);
         if (current.role === 'admin') await ensureAnotherActiveAdmin(tx, ctx.companyId, id);
-        // Users with kardex history cannot be deleted (FK restrict) → the error handler returns 409.
         await tx.delete(users).where(and(eq(users.id, id), eq(users.companyId, ctx.companyId)));
         await audit(tx, ctx, {
           entity: 'user',
@@ -176,7 +176,7 @@ export function createUserService(db: Database) {
   };
 }
 
-/** Only admins may create, modify or delete admin accounts (prevents privilege escalation). */
+// Only admins may manage admins, so an employee with "users" cannot escalate privileges.
 function assertCanManage(ctx: AuthContext, ...roles: Array<'admin' | 'employee'>) {
   if (ctx.role !== 'admin' && roles.includes('admin')) {
     throw AppError.forbidden('Solo un administrador puede gestionar administradores');

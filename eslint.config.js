@@ -29,6 +29,25 @@ export default tseslint.config(
     },
   },
   {
+    files: ['apps/**/*.{ts,tsx}', 'packages/**/*.ts'],
+    ignores: ['apps/web/src/plugins/**', 'packages/shared/src/dates.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            { name: 'sonner', message: 'Usa toast desde @/plugins/toast.plugin.' },
+            {
+              name: 'date-fns',
+              message: 'Usa dates desde @stockpro/shared o @/plugins/date.plugin.',
+            },
+          ],
+          patterns: [{ group: ['date-fns/*'], message: 'Usa el adaptador de fechas.' }],
+        },
+      ],
+    },
+  },
+  {
     files: ['apps/api/**/*.ts', 'packages/**/*.ts'],
     languageOptions: { globals: globals.node },
   },

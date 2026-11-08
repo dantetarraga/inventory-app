@@ -17,12 +17,10 @@ export interface NavItem {
   label: string;
   to: string;
   icon: LucideIcon;
-  /** Hidden when the user lacks this module. */
   module?: ModuleCode;
   description?: string;
 }
 
-/** Same order as the original sidebar (LinksArray / SecondarylinksArray). */
 export const MAIN_NAV: NavItem[] = [
   { label: 'Home', to: '/', icon: LayoutDashboard },
   { label: 'Kardex', to: '/kardex', icon: ArrowLeftRight, module: 'kardex' },

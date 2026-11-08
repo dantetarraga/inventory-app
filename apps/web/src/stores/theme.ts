@@ -1,15 +1,12 @@
 import { create } from 'zustand';
 import type { Theme } from '@stockpro/shared';
+import { storage } from '@/plugins/storage.plugin';
 
-const KEY = 'stockpro-theme';
+const KEY = 'theme';
 
 function readStored(): Theme {
-  try {
-    const v = localStorage.getItem(KEY);
-    return v === 'light' || v === 'dark' || v === 'system' ? v : 'dark';
-  } catch {
-    return 'dark';
-  }
+  const v = storage.getString(KEY);
+  return v === 'light' || v === 'dark' || v === 'system' ? v : 'dark';
 }
 
 export function applyTheme(theme: Theme) {
@@ -27,11 +24,7 @@ interface ThemeState {
 export const useTheme = create<ThemeState>((set) => ({
   theme: readStored(),
   setTheme: (theme) => {
-    try {
-      localStorage.setItem(KEY, theme);
-    } catch {
-      /* storage unavailable: theme still applies for this session */
-    }
+    storage.setString(KEY, theme);
     applyTheme(theme);
     set({ theme });
   },

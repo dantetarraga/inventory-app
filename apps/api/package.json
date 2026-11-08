@@ -25,6 +25,7 @@
     "@fastify/swagger-ui": "^5.2.3",
     "@node-rs/argon2": "^2.0.2",
     "@stockpro/shared": "workspace:*",
+    "date-fns": "^4.4.0",
     "drizzle-orm": "^0.44.6",
     "exceljs": "^4.4.0",
     "fastify": "^5.6.1",

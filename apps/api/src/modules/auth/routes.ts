@@ -28,10 +28,7 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
       expires: tokens.refreshExpiresAt,
     });
 
-  /**
-   * Cookie-authenticated endpoints require a custom header. Browsers cannot send it
-   * cross-origin without a CORS preflight, which blocks CSRF.
-   */
+  // Browsers cannot send a custom header cross-site without a CORS preflight, so this blocks CSRF.
   const requireCsrfHeader = async (req: FastifyRequest) => {
     if (req.headers['x-requested-with'] !== 'stockpro')
       throw AppError.forbidden('Falta cabecera CSRF');

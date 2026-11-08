@@ -2,7 +2,7 @@ import * as React from 'react';
 import { flexRender, getCoreRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table';
 import { ChevronLeft, ChevronRight, Inbox } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from './button';
+import { IconButton } from './button';
 import { Skeleton } from './card';
 
 interface DataTableProps<T> {
@@ -10,7 +10,6 @@ interface DataTableProps<T> {
   data: T[] | undefined;
   loading?: boolean;
   emptyMessage?: string;
-  /** Server-side pagination */
   page?: number;
   pageSize?: number;
   total?: number;
@@ -89,7 +88,7 @@ export function DataTable<T>({
               table.getRowModel().rows.map((row) => (
                 <tr
                   key={row.id}
-                  className="border-b border-[rgba(161,161,161,0.32)] transition-colors last:border-0 even:bg-[rgba(78,78,78,0.12)] hover:bg-primary/10"
+                  className="border-b border-[rgba(161,161,161,0.32)] transition-colors last:border-0 even:bg-black/[0.025] dark:even:bg-white/[0.03] hover:bg-primary/10"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <td
@@ -118,26 +117,22 @@ export function DataTable<T>({
             <span>
               Página {page} de {pageCount}
             </span>
-            <Button
-              variant="outline"
-              size="icon"
-              className="size-8"
+            <IconButton
+              size="icon-sm"
+              className="border"
+              label="Página anterior"
+              icon={<ChevronLeft />}
               disabled={page <= 1}
               onClick={() => onPageChange(page - 1)}
-              aria-label="Página anterior"
-            >
-              <ChevronLeft />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              className="size-8"
+            />
+            <IconButton
+              size="icon-sm"
+              className="border"
+              label="Página siguiente"
+              icon={<ChevronRight />}
               disabled={page >= pageCount}
               onClick={() => onPageChange(page + 1)}
-              aria-label="Página siguiente"
-            >
-              <ChevronRight />
-            </Button>
+            />
           </div>
         </div>
       )}

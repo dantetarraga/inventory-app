@@ -27,7 +27,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Field, Input, Select, Textarea } from '@/components/ui/input';
+import { Field, Input, Textarea } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { PageHeader, SearchInput } from '@/components/ui/page';
 import { kardexApi, productsApi, warehousesApi } from '@/features/api';
 import { formatDateTime, formatNumber } from '@/lib/format';
@@ -39,6 +40,7 @@ const searchSchema = listSearchSchema.extend({
   type: z.enum(MOVEMENT_TYPES).optional().catch(undefined),
   from: z.iso.date().optional().catch(undefined),
   to: z.iso.date().optional().catch(undefined),
+  new: z.enum(MOVEMENT_TYPES).optional().catch(undefined),
 });
 
 export const Route = createFileRoute('/_app/kardex')({
@@ -57,7 +59,7 @@ function KardexPage() {
   const search = Route.useSearch();
   const { page = 1, q = '', productId, type, from, to } = search;
   const navigate = Route.useNavigate();
-  const [dialogType, setDialogType] = useState<MovementType | null>(null);
+  const [dialogType, setDialogType] = useState<MovementType | null>(search.new ?? null);
   const { data, isLoading } = useQuery(
     kardexApi.listOptions({ page, pageSize: PAGE_SIZE, q, productId, type, from, to }),
   );
@@ -161,8 +163,7 @@ function KardexPage() {
           placeholder="Producto o detalle…"
         />
         <Select
-          variant="box"
-          className="h-[52px] w-40"
+          className="w-40"
           aria-label="Tipo de movimiento"
           value={type ?? ''}
           onChange={(e) =>
@@ -178,8 +179,7 @@ function KardexPage() {
         </Select>
         <Input
           type="date"
-          variant="box"
-          className="h-[52px] w-40"
+          className="w-40"
           aria-label="Desde"
           value={from ?? ''}
           max={to}
@@ -187,8 +187,7 @@ function KardexPage() {
         />
         <Input
           type="date"
-          variant="box"
-          className="h-[52px] w-40"
+          className="w-40"
           aria-label="Hasta"
           value={to ?? ''}
           min={from}
@@ -220,12 +219,16 @@ function KardexPage() {
         emptyMessage="No hay movimientos para los filtros elegidos"
       />
 
-      {dialogType && (
+      {dialogType && (!productId || filterProduct) && (
         <MovementDialog
           type={dialogType}
           initialProduct={filterProduct ?? null}
           warehouses={warehouses?.items ?? []}
-          onClose={() => setDialogType(null)}
+          onClose={() => {
+            setDialogType(null);
+            if (search.new)
+              void navigate({ search: (s) => ({ ...s, new: undefined }), replace: true });
+          }}
         />
       )}
     </>
@@ -333,7 +336,8 @@ function MovementDialog({
             </Field>
             {type === 'in' && (
               <Field
-                label="Costo unitario (opcional)"
+                label="Costo unitario"
+                optional
                 htmlFor="mv-cost"
                 error={errors.unitCost?.message}
               >
@@ -341,7 +345,12 @@ function MovementDialog({
               </Field>
             )}
             {warehouses.length > 1 && (
-              <Field label="Almacén" htmlFor="mv-wh" error={errors.warehouseId?.message}>
+              <Field
+                label="Almacén"
+                htmlFor="mv-wh"
+                error={errors.warehouseId?.message}
+                className="sm:col-span-2"
+              >
                 <Controller
                   control={form.control}
                   name="warehouseId"
@@ -359,7 +368,7 @@ function MovementDialog({
               </Field>
             )}
           </div>
-          <Field label="Detalle (opcional)" htmlFor="mv-note" error={errors.note?.message}>
+          <Field label="Detalle" optional htmlFor="mv-note" error={errors.note?.message}>
             <Textarea rows={2} {...form.register('note')} />
           </Field>
           <DialogFooter>

@@ -33,15 +33,12 @@ declare module 'fastify' {
     auth: AuthContext;
   }
   interface FastifyInstance {
-    /** Verifies the access token and loads the current user + permissions. */
     authenticate: Hook;
-    /** Requires the user to have access to a module (admins always do). */
     requirePermission: (module: ModuleCode) => Hook;
     requireAdmin: Hook;
   }
 }
 
-/** Admins implicitly have every module. */
 export function effectivePermissions(role: Role, granted: ModuleCode[]): ModuleCode[] {
   return role === 'admin' ? [...MODULE_CODES] : MODULE_CODES.filter((m) => granted.includes(m));
 }
@@ -64,7 +61,7 @@ export default fp(
         throw AppError.unauthorized('Sesión inválida o expirada');
       }
       const userId = Number(payload.sub);
-      // Loaded on every request so that deactivation / permission changes apply immediately.
+      // Loaded on every request so deactivation and permission changes apply immediately.
       const [user] = await app.db
         .select({
           id: users.id,

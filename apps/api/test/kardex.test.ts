@@ -94,7 +94,6 @@ describe('kardex', () => {
       quantity: '4',
       warehouseId: wh.json().id,
     });
-    // Default warehouse only has 3
     const res = await move(app, admin, { type: 'out', productId: p.id, quantity: '4' });
     expect(res.statusCode).toBe(409);
     expect((await getProduct(p.id)).stock).toBe('7.000');

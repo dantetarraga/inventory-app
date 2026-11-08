@@ -19,7 +19,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Field, Input, Select } from '@/components/ui/input';
+import { Field, Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { PageHeader, SearchInput } from '@/components/ui/page';
 import { brandsApi, categoriesApi, productsApi, warehousesApi } from '@/features/api';
 import { formatNumber, useMoney } from '@/lib/format';
@@ -119,7 +120,7 @@ function ProductsPage() {
         cell: ({ row }) => (
           <div className="flex justify-end gap-1">
             {canKardex && (
-              <Button variant="ghost" size="icon" className="size-8" asChild>
+              <Button variant="ghost" size="icon-sm" asChild>
                 <Link
                   to="/kardex"
                   search={{ productId: row.original.id }}
@@ -164,8 +165,7 @@ function ProductsPage() {
           placeholder="Nombre, código o código de barras…"
         />
         <Select
-          variant="box"
-          className="h-[52px] sm:w-60"
+          className="sm:w-60"
           aria-label="Filtrar por categoría"
           value={categoryId ?? ''}
           onChange={(e) =>
@@ -224,7 +224,6 @@ function ProductsPage() {
   );
 }
 
-/** Form values are strings (HTML inputs); the shared schema converts and validates them. */
 const formSchema = createProductSchema.extend({
   brandId: z.string().transform((v) => (v ? Number(v) : null)),
   categoryId: z.string().transform((v) => (v ? Number(v) : null)),
@@ -351,7 +350,8 @@ function ProductDialog({
           {!item && (
             <>
               <Field
-                label="Stock inicial (opcional)"
+                label="Stock inicial"
+                optional
                 htmlFor="p-initial"
                 error={errors.initialStock?.message}
               >

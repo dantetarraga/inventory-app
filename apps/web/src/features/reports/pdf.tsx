@@ -1,13 +1,9 @@
-/**
- * PDF rendering for reports. This module is imported lazily so @react-pdf/renderer
- * (large) is only downloaded when the user exports a PDF.
- */
 import { Document, Page, pdf, StyleSheet, Text, View } from '@react-pdf/renderer';
+import { dates } from '@/plugins/date.plugin';
 
 export interface PdfColumn {
   header: string;
   key: string;
-  /** Relative width (flex). */
   width?: number;
   align?: 'left' | 'right';
 }
@@ -85,7 +81,7 @@ function ReportDocument({ report }: { report: PdfReport }) {
           </View>
         )}
         <Text style={styles.generated} fixed>
-          Generado el {new Date().toLocaleString('es-PE')}
+          Generado el {dates.dateTime(dates.now())}
         </Text>
         <Text
           style={styles.pageNumber}
@@ -102,7 +98,7 @@ export async function downloadPdf(report: PdfReport, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = Object.assign(document.createElement('a'), {
     href: url,
-    download: `${filename}-${new Date().toISOString().slice(0, 10)}.pdf`,
+    download: `${filename}-${dates.today()}.pdf`,
   });
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);

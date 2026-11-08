@@ -7,7 +7,6 @@ import { productsApi } from '@/features/api';
 import { formatNumber } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
-/** Accessible combobox that searches products server-side. */
 export function ProductPicker({
   value,
   onChange,

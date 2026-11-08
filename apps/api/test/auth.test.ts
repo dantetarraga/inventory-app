@@ -86,7 +86,6 @@ describe('auth', () => {
     const rotated = first.cookies.find((c) => c.name === 'stockpro_rt')!;
     expect(`stockpro_rt=${rotated.value}`).not.toBe(s.cookie);
 
-    // Reusing the old token is treated as theft: everything in the family dies.
     const reuse = await refresh(s.cookie);
     expect(reuse.statusCode).toBe(401);
     const afterReuse = await refresh(`stockpro_rt=${rotated.value}`);
@@ -108,7 +107,6 @@ describe('auth', () => {
     });
     expect(out.statusCode).toBe(204);
     expect((await refresh(s.cookie)).statusCode).toBe(401);
-    // Login still works afterwards
     await expect(login(app, s.auth.me.user.email)).resolves.toBeTruthy();
   });
 });

@@ -1,9 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
 
-/**
- * E2E tests run against the dev servers (API + web).
- * Start them with `pnpm dev` (and a migrated database) or let Playwright start them.
- */
 export default defineConfig({
   testDir: './e2e',
   timeout: 60_000,

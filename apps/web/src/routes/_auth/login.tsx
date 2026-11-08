@@ -6,12 +6,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { AtSign, LockKeyhole } from 'lucide-react';
 import { z } from 'zod';
 import { loginSchema, type LoginInput } from '@stockpro/shared';
-import { FloatingField, FormAlert } from '@/components/auth/floating-field';
+import { AuthField, FormAlert } from '@/components/auth/auth-field';
 import { authTransition } from '@/components/layout/auth-shell';
 import { Button } from '@/components/ui/button';
 import { authApi } from '@/features/api';
 import { safeRedirect } from '@/lib/guards';
+import { ApiError } from '@/lib/http';
 import { applyServerErrors, errorMessage } from '@/lib/query';
+import { toast } from '@/plugins/toast.plugin';
 import { useSession } from '@/stores/session';
 
 export const Route = createFileRoute('/_auth/login')({
@@ -35,33 +37,38 @@ function LoginPage() {
     onMutate: () => setFormError(null),
     onSuccess: async (auth) => {
       setSession(auth);
+      toast.success(`¡Hola, ${auth.me.user.fullName.split(' ')[0]}!`);
       await navigate({ to: safeRedirect(search.redirect), viewTransition: true });
     },
     onError: (err) => {
-      if (!applyServerErrors(err, form.setError)) setFormError(errorMessage(err));
+      if (applyServerErrors(err, form.setError)) return;
+      setFormError(errorMessage(err));
+      if (err instanceof ApiError && err.code === 'INVALID_CREDENTIALS') {
+        form.resetField('password');
+        form.setFocus('password');
+      }
     },
   });
 
   return (
-    <form className="grid gap-5" onSubmit={form.handleSubmit((v) => login.mutate(v))} noValidate>
-      <div>
-        <h2 className="text-xl font-bold">¡Hola de nuevo!</h2>
-        <p className="mt-1 text-sm text-[#6b6b6b]">
-          Ingresa con tu cuenta o la que te dio tu empleador.
-        </p>
-      </div>
-      <FormAlert message={formError} />
-      <FloatingField
+    <form className="grid gap-6" onSubmit={form.handleSubmit((v) => login.mutate(v))} noValidate>
+      <header className="grid gap-2">
+        <h1 className="text-[32px] font-bold leading-tight tracking-tight">Inicia sesión</h1>
+        <p className="text-[15px] text-[#6b6b6b]">Usa tu cuenta o la que te dio tu empleador.</p>
+      </header>
+
+      <AuthField
         id="email"
         label="Email"
         icon={AtSign}
         type="email"
         autoComplete="username"
+        placeholder="tu@empresa.com"
         autoFocus
         error={errors.email?.message}
         {...form.register('email')}
       />
-      <FloatingField
+      <AuthField
         id="password"
         label="Contraseña"
         icon={LockKeyhole}
@@ -70,17 +77,22 @@ function LoginPage() {
         error={errors.password?.message}
         {...form.register('password')}
       />
-      <Button type="submit" size="lg" className="mt-2 w-full" loading={login.isPending}>
-        Ingresar
-      </Button>
-      <p className="text-center text-sm text-[#6b6b6b]">
-        ¿Tu empresa aún no usa StockPRO?{' '}
+
+      <div className="grid gap-3">
+        <FormAlert message={formError} />
+        <Button type="submit" size="lg" className="w-full" loading={login.isPending}>
+          Ingresar
+        </Button>
+      </div>
+
+      <p className="text-[15px] text-[#6b6b6b]">
+        ¿Tu empresa aún no tiene cuenta?{' '}
         <Link
           to="/register"
           viewTransition={authTransition('/register')}
-          className="font-semibold text-[#ec580e] hover:underline"
+          className="whitespace-nowrap font-semibold text-[#1e1e1e] underline decoration-primary decoration-2 underline-offset-4 hover:text-[#ec580e]"
         >
-          Crea una cuenta
+          Registrar empresa
         </Link>
       </p>
     </form>

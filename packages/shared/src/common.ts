@@ -3,10 +3,6 @@ import { z } from 'zod';
 export const idSchema = z.coerce.number().int().positive();
 export const idParamsSchema = z.object({ id: idSchema });
 
-/**
- * Decimal values travel as strings to avoid floating point loss (Postgres `numeric`).
- * Accepts numbers too (handy for forms) and normalizes to a string.
- */
 export const decimalString = (scale: number) =>
   z
     .union([z.string(), z.number()])
@@ -34,13 +30,29 @@ export const paginated = <T extends z.ZodType>(item: T) =>
   });
 export type Paginated<T> = { items: T[]; total: number; page: number; pageSize: number };
 
-/** RFC 7807 problem details. */
+export const ERROR_CODES = [
+  'BAD_REQUEST',
+  'VALIDATION_ERROR',
+  'INVALID_BODY',
+  'UNSUPPORTED_MEDIA_TYPE',
+  'PAYLOAD_TOO_LARGE',
+  'UNAUTHORIZED',
+  'INVALID_CREDENTIALS',
+  'FORBIDDEN',
+  'NOT_FOUND',
+  'CONFLICT',
+  'INSUFFICIENT_STOCK',
+  'RATE_LIMITED',
+  'INTERNAL',
+] as const;
+export type ErrorCode = (typeof ERROR_CODES)[number];
+
 export const problemSchema = z.object({
   type: z.string(),
   title: z.string(),
   status: z.number().int(),
   detail: z.string().optional(),
-  code: z.string().optional(),
+  code: z.enum(ERROR_CODES),
   errors: z.array(z.object({ path: z.string(), message: z.string() })).optional(),
 });
 export type Problem = z.infer<typeof problemSchema>;

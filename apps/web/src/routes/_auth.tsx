@@ -4,7 +4,6 @@ import { refreshSession } from '@/lib/http';
 import { safeRedirect } from '@/lib/guards';
 import { useSession } from '@/stores/session';
 
-/** Pathless layout shared by /login and /register: the shell stays mounted, only the form changes. */
 export const Route = createFileRoute('/_auth')({
   beforeLoad: async ({ location }) => {
     if (useSession.getState().accessToken || (await refreshSession())) {

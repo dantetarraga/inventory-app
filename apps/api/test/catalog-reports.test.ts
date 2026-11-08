@@ -28,7 +28,6 @@ describe('catalog', () => {
       payload: { name: 'GLORIA' },
     });
     expect(b.statusCode).toBe(409);
-    // Another company can use the same name
     const other = await registerCompany(app);
     const c = await app.inject({
       method: 'POST',

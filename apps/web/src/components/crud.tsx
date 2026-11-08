@@ -1,10 +1,9 @@
 import { useState, type ReactNode } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
 import { z } from 'zod';
-import { Button } from '@/components/ui/button';
+import { IconButton } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/dialog';
 
-/** Search params shared by list screens: kept in the URL so lists are linkable and survive reloads. */
 export const listSearchSchema = z.object({
   page: z.coerce.number().int().min(1).catch(1).optional(),
   q: z.string().catch('').optional(),
@@ -31,22 +30,16 @@ export function RowActions({
   if (!canEdit) return null;
   return (
     <div className="flex justify-end gap-1">
-      {onEdit && (
-        <Button variant="ghost" size="icon" className="size-8" onClick={onEdit} aria-label="Editar">
-          <Pencil />
-        </Button>
-      )}
+      {onEdit && <IconButton size="icon-sm" label="Editar" icon={<Pencil />} onClick={onEdit} />}
       {onDelete && (
         <>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
+          <IconButton
+            variant="danger"
+            size="icon-sm"
+            label="Eliminar"
+            icon={<Trash2 />}
             onClick={() => setConfirm(true)}
-            aria-label="Eliminar"
-          >
-            <Trash2 />
-          </Button>
+          />
           <ConfirmDialog
             open={confirm}
             onOpenChange={setConfirm}
@@ -68,7 +61,6 @@ export function RowActions({
   );
 }
 
-/** Open/close state for a create/edit dialog. `null` = closed, `'new'` = create, object = edit. */
 export function useEditor<T>() {
   const [editing, setEditing] = useState<T | 'new' | null>(null);
   return {

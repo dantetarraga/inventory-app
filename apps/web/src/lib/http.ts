@@ -1,20 +1,27 @@
-import type { AuthResponse, Problem } from '@stockpro/shared';
+import type { AuthResponse, ErrorCode, Problem } from '@stockpro/shared';
 import { useSession } from '@/stores/session';
 
 const BASE = import.meta.env.VITE_API_URL ?? '/api';
 const CSRF_HEADER = { 'x-requested-with': 'stockpro' };
 
+export type ClientErrorCode = ErrorCode | 'NETWORK' | 'UNAVAILABLE';
+
 export class ApiError extends Error {
   readonly status: number;
-  readonly code?: string;
+  readonly code: ClientErrorCode;
   readonly fieldErrors: Problem['errors'];
 
-  constructor(problem: Problem) {
-    super(problem.title);
+  constructor(init: {
+    title: string;
+    status: number;
+    code: ClientErrorCode;
+    errors?: Problem['errors'];
+  }) {
+    super(init.title);
     this.name = 'ApiError';
-    this.status = problem.status;
-    this.code = problem.code;
-    this.fieldErrors = problem.errors;
+    this.status = init.status;
+    this.code = init.code;
+    this.fieldErrors = init.errors;
   }
 }
 
@@ -38,31 +45,56 @@ function buildUrl(path: string, query?: Query) {
   return qs ? `${url}?${qs}` : url;
 }
 
+export const FRIENDLY_MESSAGES = {
+  offline: 'No hay conexión con StockPRO. Revisa tu internet e inténtalo de nuevo.',
+  unavailable: 'StockPRO no está disponible en este momento. Inténtalo de nuevo en unos minutos.',
+  server: 'No pudimos completar la acción por un problema en el servidor. Inténtalo de nuevo.',
+  unexpected: 'No pudimos completar la acción. Inténtalo de nuevo.',
+} as const;
+
+function friendlyFallback(status: number) {
+  if (status === 0) return FRIENDLY_MESSAGES.offline;
+  if (status === 502 || status === 503 || status === 504) return FRIENDLY_MESSAGES.unavailable;
+  if (status >= 500) return FRIENDLY_MESSAGES.server;
+  return FRIENDLY_MESSAGES.unexpected;
+}
+
 async function toError(res: Response): Promise<ApiError> {
+  const isProblem = (res.headers.get('content-type') ?? '').includes('json');
+  const body = isProblem ? ((await res.json().catch(() => ({}))) as Partial<Problem>) : {};
+  // A 5xx without problem+json means the API did not answer (proxy or gateway), not an API error.
+  const apiAnswered = isProblem && typeof body.title === 'string';
+  const status = res.status;
+  const title =
+    apiAnswered && status < 500
+      ? body.title!
+      : !apiAnswered && status >= 500
+        ? FRIENDLY_MESSAGES.unavailable
+        : friendlyFallback(status);
+  return new ApiError({
+    title,
+    status,
+    code: apiAnswered && body.code ? body.code : status >= 500 ? 'UNAVAILABLE' : 'BAD_REQUEST',
+    errors: body.errors,
+  });
+}
+
+async function safeFetch(input: string, init: RequestInit): Promise<Response> {
   try {
-    const body = (await res.json()) as Partial<Problem>;
-    return new ApiError({
-      type: body.type ?? 'about:blank',
-      title: body.title ?? res.statusText,
-      status: res.status,
-      code: body.code,
-      errors: body.errors,
-    });
-  } catch {
-    return new ApiError({
-      type: 'about:blank',
-      title: res.statusText || 'Error de red',
-      status: res.status,
+    return await fetch(input, init);
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') throw err;
+    throw new ApiError({
+      title: FRIENDLY_MESSAGES.offline,
+      status: 0,
+      code: 'NETWORK',
     });
   }
 }
 
 let refreshing: Promise<AuthResponse | null> | null = null;
 
-/**
- * Exchanges the httpOnly refresh cookie for a new access token.
- * Single-flight: concurrent callers share one request so the rotated token isn't reused.
- */
+// Single-flight: concurrent 401s share one refresh so a rotated token is never reused.
 export function refreshSession(): Promise<AuthResponse | null> {
   refreshing ??= (async () => {
     try {
@@ -93,7 +125,7 @@ async function send(path: string, opts: RequestOptions, retried = false): Promis
   if (token) headers.authorization = `Bearer ${token}`;
   if (opts.body !== undefined) headers['content-type'] = 'application/json';
 
-  const res = await fetch(buildUrl(path, opts.query), {
+  const res = await safeFetch(buildUrl(path, opts.query), {
     method: opts.method ?? 'GET',
     headers,
     body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
@@ -115,7 +147,6 @@ export async function api<T>(path: string, opts: RequestOptions = {}): Promise<T
   return (await res.json()) as T;
 }
 
-/** Downloads a binary response (e.g. an xlsx report) and triggers a browser save. */
 export async function download(path: string, query: Query, fallbackName: string) {
   const res = await send(path, { query });
   const blob = await res.blob();

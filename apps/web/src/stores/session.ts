@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import type { AuthResponse, Me, ModuleCode } from '@stockpro/shared';
 
 interface SessionState {
-  /** Short-lived access token, kept in memory only (never in localStorage). */
   accessToken: string | null;
   me: Me | null;
   setSession: (auth: AuthResponse) => void;

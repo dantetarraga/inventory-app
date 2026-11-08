@@ -3,7 +3,6 @@ import path from 'node:path';
 import pg from 'pg';
 import { runMigrations } from '../src/db/migrate';
 
-/** Loads ../../.env without overriding variables already set (e.g. in CI). */
 function loadDotEnv() {
   const file = path.resolve(import.meta.dirname, '../../../.env');
   if (!existsSync(file)) return;

@@ -12,6 +12,7 @@ import {
   validatorCompiler,
   type ZodTypeProvider,
 } from 'fastify-type-provider-zod';
+import { problemSchema } from '@stockpro/shared';
 import { createDb, type Database } from './db/client';
 import type { Env } from './env';
 import authPlugin from './plugins/auth';
@@ -54,6 +55,15 @@ export async function buildApp({ env, logger }: BuildAppOptions) {
 
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
+
+  app.addHook('onRoute', (route) => {
+    if (!route.schema || route.schema.hide) return;
+    route.schema.response = {
+      '4xx': problemSchema,
+      '5xx': problemSchema,
+      ...(route.schema.response as Record<string, unknown> | undefined),
+    };
+  });
 
   await app.register(
     fp(

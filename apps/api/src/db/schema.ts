@@ -23,13 +23,14 @@ import {
   THEMES,
   USER_STATUSES,
 } from '@stockpro/shared';
+import { dates } from '@stockpro/shared';
 
 const timestamps = {
   createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp({ withTimezone: true })
     .notNull()
     .defaultNow()
-    .$onUpdate(() => new Date()),
+    .$onUpdate(() => dates.now()),
 };
 
 const id = () => integer().primaryKey().generatedAlwaysAsIdentity();
@@ -97,7 +98,6 @@ export const refreshTokens = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     tokenHash: text().notNull().unique(),
-    /** All tokens issued from one login share a family; reuse of a rotated token revokes it. */
     familyId: uuid().notNull(),
     expiresAt: timestamp({ withTimezone: true }).notNull(),
     revokedAt: timestamp({ withTimezone: true }),
@@ -169,7 +169,6 @@ export const products = pgTable(
     salePrice: numeric({ precision: 14, scale: 2 }).notNull().default('0'),
     purchasePrice: numeric({ precision: 14, scale: 2 }).notNull().default('0'),
     minStock: numeric({ precision: 14, scale: 3 }).notNull().default('0'),
-    /** Soft delete: products with history are never physically removed. */
     deletedAt: timestamp({ withTimezone: true }),
     ...timestamps,
   },
@@ -221,7 +220,6 @@ export const kardexMovements = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: 'restrict' }),
     type: movementTypeEnum().notNull(),
-    /** Signed quantity applied to stock. */
     delta: numeric({ precision: 14, scale: 3 }).notNull(),
     balanceAfter: numeric({ precision: 14, scale: 3 }).notNull(),
     unitCost: numeric({ precision: 14, scale: 2 }),

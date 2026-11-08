@@ -6,12 +6,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { AtSign, Building2, Coins, LockKeyhole, UserRound } from 'lucide-react';
 import type { z } from 'zod';
 import { registerSchema } from '@stockpro/shared';
-import { FloatingField, FormAlert } from '@/components/auth/floating-field';
+import { AuthField, authControlClass, FormAlert } from '@/components/auth/auth-field';
 import { authTransition } from '@/components/layout/auth-shell';
 import { Button } from '@/components/ui/button';
 import { authApi } from '@/features/api';
 import { CURRENCIES } from '@/lib/currencies';
 import { applyServerErrors, errorMessage } from '@/lib/query';
+import { toast } from '@/plugins/toast.plugin';
 import { useSession } from '@/stores/session';
 
 export const Route = createFileRoute('/_auth/register')({ component: RegisterPage });
@@ -41,6 +42,9 @@ function RegisterPage() {
     onMutate: () => setFormError(null),
     onSuccess: async (auth) => {
       setSession(auth);
+      toast.success('Empresa registrada', {
+        description: `${auth.me.company.name} ya está lista. Empieza registrando tus productos.`,
+      });
       await navigate({ to: '/', viewTransition: true });
     },
     onError: (err) => {
@@ -49,44 +53,40 @@ function RegisterPage() {
   });
 
   return (
-    <form className="grid gap-4" onSubmit={form.handleSubmit((v) => register.mutate(v))} noValidate>
-      <div>
-        <h2 className="text-xl font-bold">Registra tu empresa</h2>
-        <p className="mt-1 text-sm text-[#6b6b6b]">
-          Serás su administrador y podrás invitar a tu equipo.
-        </p>
-      </div>
-      <FormAlert message={formError} />
-      <div className="grid gap-4 sm:grid-cols-[1fr_9.5rem]">
-        <FloatingField
-          id="companyName"
-          label="Nombre de la empresa"
-          icon={Building2}
-          autoComplete="organization"
-          autoFocus
-          error={errors.companyName?.message}
-          {...form.register('companyName')}
-        />
-        <FloatingField id="currency" label="Moneda" icon={Coins} error={errors.currency?.message}>
-          <select
-            id="currency"
-            className="peer h-14 w-full appearance-none border-0 border-b-2 border-[#d6d6d6] bg-transparent pb-1.5 pl-7 pt-5 text-[15px] font-medium text-[#202020] outline-none focus:border-transparent"
-            {...form.register('currency', {
-              onChange: (e: React.ChangeEvent<HTMLSelectElement>) => {
-                const c = CURRENCIES.find((x) => x.code === e.target.value);
-                if (c) form.setValue('country', c.country);
-              },
-            })}
-          >
-            {CURRENCIES.map((c) => (
-              <option key={c.code} value={c.code} title={c.name}>
-                {c.code}
-              </option>
-            ))}
-          </select>
-        </FloatingField>
-      </div>
-      <FloatingField
+    <form className="grid gap-5" onSubmit={form.handleSubmit((v) => register.mutate(v))} noValidate>
+      <header className="grid gap-2">
+        <h1 className="text-[32px] font-bold leading-tight tracking-tight">Registra tu empresa</h1>
+        <p className="text-[15px] text-[#6b6b6b]">Serás el administrador de la cuenta.</p>
+      </header>
+
+      <AuthField
+        id="companyName"
+        label="Nombre de la empresa"
+        icon={Building2}
+        autoComplete="organization"
+        autoFocus
+        error={errors.companyName?.message}
+        {...form.register('companyName')}
+      />
+      <AuthField id="currency" label="Moneda" icon={Coins} error={errors.currency?.message}>
+        <select
+          id="currency"
+          className={authControlClass}
+          {...form.register('currency', {
+            onChange: (e: React.ChangeEvent<HTMLSelectElement>) => {
+              const c = CURRENCIES.find((x) => x.code === e.target.value);
+              if (c) form.setValue('country', c.country);
+            },
+          })}
+        >
+          {CURRENCIES.map((c) => (
+            <option key={c.code} value={c.code}>
+              {c.name} ({c.code})
+            </option>
+          ))}
+        </select>
+      </AuthField>
+      <AuthField
         id="fullName"
         label="Tu nombre"
         icon={UserRound}
@@ -94,16 +94,17 @@ function RegisterPage() {
         error={errors.fullName?.message}
         {...form.register('fullName')}
       />
-      <FloatingField
+      <AuthField
         id="email"
         label="Email"
         icon={AtSign}
         type="email"
         autoComplete="email"
+        placeholder="tu@empresa.com"
         error={errors.email?.message}
         {...form.register('email')}
       />
-      <FloatingField
+      <AuthField
         id="password"
         label="Contraseña"
         icon={LockKeyhole}
@@ -113,15 +114,20 @@ function RegisterPage() {
         error={errors.password?.message}
         {...form.register('password')}
       />
-      <Button type="submit" size="lg" className="mt-2 w-full" loading={register.isPending}>
-        Crear cuenta
-      </Button>
-      <p className="text-center text-sm text-[#6b6b6b]">
+
+      <div className="grid gap-3">
+        <FormAlert message={formError} />
+        <Button type="submit" size="lg" className="mt-1 w-full" loading={register.isPending}>
+          Registrar empresa
+        </Button>
+      </div>
+
+      <p className="text-[15px] text-[#6b6b6b]">
         ¿Ya tienes cuenta?{' '}
         <Link
           to="/login"
           viewTransition={authTransition('/login')}
-          className="font-semibold text-[#ec580e] hover:underline"
+          className="whitespace-nowrap font-semibold text-[#1e1e1e] underline decoration-primary decoration-2 underline-offset-4 hover:text-[#ec580e]"
         >
           Inicia sesión
         </Link>

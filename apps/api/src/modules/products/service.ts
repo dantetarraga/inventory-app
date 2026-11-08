@@ -1,4 +1,4 @@
-import { and, asc, count, eq, ilike, isNull, or, sql, type SQL } from 'drizzle-orm';
+import { and, asc, count, eq, ilike, isNull, or, type SQL } from 'drizzle-orm';
 import type { z } from 'zod';
 import type {
   createProductSchema,
@@ -8,20 +8,18 @@ import type {
   updateProductSchema,
 } from '@stockpro/shared';
 import type { Database, DbOrTx } from '../../db/client';
-import { brands, categories, products, stock } from '../../db/schema';
+import { brands, categories, products } from '../../db/schema';
 import { AppError } from '../../lib/errors';
 import { audit } from '../../lib/audit';
 import { likePattern, pageOffset } from '../../lib/pagination';
 import type { AuthContext } from '../../plugins/auth';
 import { registerMovement } from '../kardex/service';
+import { isLowStockSql, totalStockColumn } from './repository';
+import { dates } from '@stockpro/shared';
 
 type ListQuery = z.output<typeof listProductsQuerySchema>;
 type CreateInput = z.output<typeof createProductSchema>;
 type UpdateInput = z.output<typeof updateProductSchema>;
-
-/** Total stock across warehouses, as numeric. */
-export const totalStockSql = sql<string>`coalesce((select sum(${stock.quantity}) from ${stock} where ${stock.productId} = ${products.id}), 0)`;
-export const isLowStockSql = sql<boolean>`(${totalStockSql} <= ${products.minStock})`;
 
 export function createProductService(db: Database) {
   const columns = {
@@ -37,7 +35,7 @@ export function createProductService(db: Database) {
     salePrice: products.salePrice,
     purchasePrice: products.purchasePrice,
     minStock: products.minStock,
-    stock: sql<string>`${totalStockSql}::numeric(14,3)`,
+    stock: totalStockColumn,
     isLowStock: isLowStockSql,
     createdAt: products.createdAt,
   };
@@ -65,7 +63,7 @@ export function createProductService(db: Database) {
     minStock: r.minStock,
     stock: r.stock,
     isLowStock: r.isLowStock,
-    createdAt: r.createdAt.toISOString(),
+    createdAt: dates.toISO(r.createdAt),
   });
 
   const scope = (ctx: AuthContext, ...conds: Array<SQL | undefined>) =>
@@ -77,7 +75,6 @@ export function createProductService(db: Database) {
     return toDto(row);
   }
 
-  /** Brand/category ids come from the client: make sure they belong to the same company. */
   async function assertRefs(
     tx: DbOrTx,
     ctx: AuthContext,
@@ -175,7 +172,7 @@ export function createProductService(db: Database) {
       await db.transaction(async (tx) => {
         const deleted = await tx
           .update(products)
-          .set({ deletedAt: new Date() })
+          .set({ deletedAt: dates.now() })
           .where(scope(ctx, eq(products.id, id)))
           .returning({ id: products.id });
         if (deleted.length === 0) throw AppError.notFound('Producto');

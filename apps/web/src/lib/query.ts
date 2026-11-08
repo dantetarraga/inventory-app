@@ -6,10 +6,10 @@ import {
   useQueryClient,
   type QueryKey,
 } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { toast } from '@/plugins/toast.plugin';
 import type { FieldValues, Path, UseFormSetError } from 'react-hook-form';
 import type { Paginated } from '@stockpro/shared';
-import { api, ApiError } from './http';
+import { api, ApiError, FRIENDLY_MESSAGES } from './http';
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -25,11 +25,10 @@ export const queryClient = new QueryClient({
 });
 
 export function errorMessage(err: unknown) {
-  if (err instanceof Error) return err.message;
-  return 'Ocurrió un error inesperado';
+  if (err instanceof ApiError) return err.message;
+  return FRIENDLY_MESSAGES.unexpected;
 }
 
-/** Copies field errors returned by the API (problem+json) into react-hook-form. */
 export function applyServerErrors<T extends FieldValues>(
   err: unknown,
   setError: UseFormSetError<T>,
@@ -46,10 +45,6 @@ export type ListParams = { page?: number; pageSize?: number; q?: string } & Reco
   string | number | boolean | undefined
 >;
 
-/**
- * Standard REST resource: list (paginated), create, update, delete.
- * Mutations invalidate the resource and any `alsoInvalidate` keys (e.g. products ← categories).
- */
 export function createResource<T, TCreate, TUpdate = TCreate>(
   key: string,
   path: string,

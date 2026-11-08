@@ -1,3 +1,4 @@
+import './zod-locale';
 export * from './common';
 export * from './modules';
 export * from './auth';
@@ -7,3 +8,4 @@ export * from './catalog';
 export * from './products';
 export * from './kardex';
 export * from './reports';
+export * from './dates';

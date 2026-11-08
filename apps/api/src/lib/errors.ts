@@ -1,16 +1,7 @@
-export type ErrorCode =
-  | 'BAD_REQUEST'
-  | 'VALIDATION_ERROR'
-  | 'UNAUTHORIZED'
-  | 'INVALID_CREDENTIALS'
-  | 'FORBIDDEN'
-  | 'NOT_FOUND'
-  | 'CONFLICT'
-  | 'INSUFFICIENT_STOCK'
-  | 'RATE_LIMITED'
-  | 'INTERNAL';
+import type { ErrorCode } from '@stockpro/shared';
 
-/** Expected, user-facing error. Rendered as RFC 7807 problem+json by the error handler. */
+export type { ErrorCode };
+
 export class AppError extends Error {
   constructor(
     public readonly status: number,
@@ -38,7 +29,6 @@ export class AppError extends Error {
   }
 }
 
-/** Postgres error codes we translate into friendly API errors. */
 export const PG = {
   UNIQUE_VIOLATION: '23505',
   FOREIGN_KEY_VIOLATION: '23503',
@@ -46,7 +36,6 @@ export const PG = {
 } as const;
 
 export function pgErrorCode(err: unknown): string | undefined {
-  // drizzle wraps driver errors in `cause`
   for (let e: unknown = err, i = 0; e && i < 3; e = (e as { cause?: unknown }).cause, i++) {
     const code = (e as { code?: unknown }).code;
     if (typeof code === 'string' && /^[0-9A-Z]{5}$/.test(code)) return code;

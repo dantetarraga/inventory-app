@@ -1,9 +1,5 @@
-/**
- * Query options and mutations for every API resource.
- * Components consume these; no server data lives in Zustand stores.
- */
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { toast } from '@/plugins/toast.plugin';
 import type {
   AuthResponse,
   Brand,
@@ -41,7 +37,6 @@ const productKeys = ['products'] as const;
 const dashboardKeys = ['dashboard'] as const;
 const reportKeys = ['reports'] as const;
 
-// ---------- Auth ----------
 export const authApi = {
   login: (body: LoginInput) => api<AuthResponse>('/auth/login', { method: 'POST', body }),
   register: (body: RegisterInput) => api<AuthResponse>('/auth/register', { method: 'POST', body }),
@@ -57,7 +52,6 @@ export const authApi = {
     api<Me>('/auth/me/preferences', { method: 'PATCH', body: { theme } }),
 };
 
-// ---------- Catalog ----------
 export const categoriesApi = createResource<Category, UpsertCategoryInput>(
   'categories',
   '/categories',
@@ -91,7 +85,6 @@ export const warehousesApi = {
   },
 };
 
-// ---------- Products ----------
 export const productsApi = createResource<Product, CreateProductInput, UpdateProductInput>(
   'products',
   '/products',
@@ -99,7 +92,6 @@ export const productsApi = createResource<Product, CreateProductInput, UpdatePro
   [dashboardKeys, reportKeys, ['kardex']],
 );
 
-// ---------- Kardex ----------
 const kardexResource = createResource<Movement, CreateMovementInput>(
   'kardex',
   '/kardex',
@@ -112,14 +104,12 @@ export const kardexApi = {
   useCreate: kardexResource.useCreate,
 };
 
-// ---------- Users ----------
 export const usersApi = createResource<User, CreateUserInput, UpdateUserInput>('users', '/users', {
   created: 'Usuario creado',
   updated: 'Usuario actualizado',
   deleted: 'Usuario eliminado',
 });
 
-// ---------- Company ----------
 export const companyApi = {
   options: () =>
     queryOptions({
@@ -155,7 +145,6 @@ export const companyApi = {
   },
 };
 
-// ---------- Dashboard & reports ----------
 export const dashboardApi = {
   summaryOptions: () =>
     queryOptions({

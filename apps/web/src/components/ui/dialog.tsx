@@ -76,7 +76,6 @@ interface ConfirmDialogProps {
   onConfirm: () => void;
 }
 
-/** Accessible confirmation (replaces SweetAlert from the original app). */
 export function ConfirmDialog({
   open,
   onOpenChange,

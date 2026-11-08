@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react';
 import type { QueryClient } from '@tanstack/react-query';
 import { createRootRouteWithContext, Link, Outlet } from '@tanstack/react-router';
-import { Toaster } from 'sonner';
+import { ToastViewport } from '@/plugins/toast.plugin';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/stores/theme';
 
@@ -31,7 +31,7 @@ function RootComponent() {
   return (
     <>
       <Outlet />
-      <Toaster richColors closeButton position="top-right" theme={theme} />
+      <ToastViewport theme={theme} />
       <Suspense>
         <Devtools />
       </Suspense>

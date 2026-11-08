@@ -10,7 +10,7 @@ async function registerCompany(page: Page) {
   await page.getByLabel('Tu nombre').fill('Ana Pérez');
   await page.getByLabel('Email', { exact: true }).fill(email);
   await page.getByLabel('Contraseña', { exact: true }).fill(PASSWORD);
-  await page.getByRole('button', { name: 'Crear cuenta' }).click();
+  await page.getByRole('button', { name: 'Registrar empresa' }).click();
   await expect(page.getByRole('heading', { name: 'Hola, Ana' })).toBeVisible();
   return email;
 }
@@ -34,14 +34,12 @@ async function registerMovement(
 test('register → create product → in/out → stock and reports', async ({ page }) => {
   await registerCompany(page);
 
-  // Category
   await page.goto('/settings/categories');
   await page.getByRole('button', { name: 'Nueva categoría' }).click();
   await page.getByRole('dialog').getByLabel('Nombre').fill('Bebidas');
   await page.getByRole('dialog').getByRole('button', { name: 'Guardar' }).click();
   await expect(page.getByRole('cell', { name: 'Bebidas' })).toBeVisible();
 
-  // Product
   const product = `Agua ${unique()}`;
   await page.goto('/settings/products');
   await page.getByRole('button', { name: 'Nuevo producto' }).click();
@@ -54,12 +52,10 @@ test('register → create product → in/out → stock and reports', async ({ pa
   await dialog.getByRole('button', { name: 'Guardar' }).click();
   await expect(page.getByText('Producto creado')).toBeVisible();
 
-  // Kardex: in 10, out 3
   await page.goto('/kardex');
   await registerMovement(page, 'Entrada', product, '10');
   await registerMovement(page, 'Salida', product, '3');
 
-  // Output larger than stock is rejected with a clear message
   await page.getByRole('button', { name: 'Salida', exact: true }).click();
   const d = page.getByRole('dialog');
   await d.getByRole('combobox').fill(product.slice(0, 6));
@@ -69,16 +65,13 @@ test('register → create product → in/out → stock and reports', async ({ pa
   await expect(page.getByText(/Stock insuficiente/)).toBeVisible();
   await d.getByRole('button', { name: 'Cancelar' }).click();
 
-  // Stock is 7 in products list
   await page.goto('/settings/products');
   const row = page.getByRole('row', { name: new RegExp(product) });
   await expect(row).toContainText('7');
 
-  // Valuation: 7 × 1.20 = 8.40
   await page.goto('/reports?tab=valuation');
   await expect(page.getByText(/8[.,]40/).first()).toBeVisible();
 
-  // Excel export downloads a file
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Excel' }).click();
   expect((await download).suggestedFilename()).toMatch(/inventario-valorado.*\.xlsx$/);
@@ -89,8 +82,7 @@ test('session survives a reload and logout clears it', async ({ page }) => {
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Hola, Ana' })).toBeVisible();
 
-  await page.getByRole('button', { name: 'Menú de usuario' }).click();
-  await page.getByRole('menuitem', { name: 'Cerrar sesión' }).click();
+  await page.getByRole('button', { name: 'Cerrar sesión' }).click();
   await expect(page).toHaveURL(/\/login/);
   await page.goto('/kardex');
   await expect(page).toHaveURL(/\/login\?redirect=/);
@@ -105,7 +97,6 @@ test('employee only sees permitted modules', async ({ page, browser }) => {
   await dialog.getByLabel('Nombre completo').fill('Luis Ramos');
   await dialog.getByLabel('Email', { exact: true }).fill(empEmail);
   await dialog.getByLabel('Contraseña', { exact: true }).fill(PASSWORD);
-  // default permission is Kardex only
   await dialog.getByRole('button', { name: 'Guardar' }).click();
   await expect(page.getByText('Usuario creado')).toBeVisible();
 
@@ -130,19 +121,33 @@ test('mobile navigation works @mobile', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Kardex' })).toBeVisible();
 });
 
-test('wrong credentials show an inline error and tabs switch forms', async ({ page }) => {
+test('wrong credentials show an inline error and the forms link to each other', async ({
+  page,
+}) => {
   await page.goto('/login');
   await page.getByLabel('Email', { exact: true }).fill(`nobody-${unique()}@test.dev`);
   await page.getByLabel('Contraseña', { exact: true }).fill('Wrong1234');
   await page.getByRole('button', { name: 'Ingresar' }).click();
   await expect(page.getByRole('alert')).toContainText('Email o contraseña incorrectos');
 
-  await page
-    .getByRole('navigation', { name: 'Acceso' })
-    .getByRole('link', { name: 'Crear cuenta' })
-    .click();
+  await page.getByRole('link', { name: 'Registrar empresa' }).click();
   await expect(page).toHaveURL(/\/register$/);
   await expect(page.getByRole('heading', { name: 'Registra tu empresa' })).toBeVisible();
-  await page.getByRole('link', { name: 'Iniciar sesión' }).click();
-  await expect(page.getByRole('heading', { name: '¡Hola de nuevo!' })).toBeVisible();
+  await page.getByRole('link', { name: 'Inicia sesión' }).click();
+  await expect(page.getByRole('heading', { name: 'Inicia sesión' })).toBeVisible();
+});
+
+test('when the API is down the login shows a clear message, not "Internal Server Error"', async ({
+  page,
+}) => {
+  await page.route('**/api/auth/login', (route) =>
+    route.fulfill({ status: 500, body: '', contentType: 'text/plain' }),
+  );
+  await page.goto('/login');
+  await page.getByLabel('Email', { exact: true }).fill('alguien@test.dev');
+  await page.getByLabel('Contraseña', { exact: true }).fill('Secret123');
+  await page.getByRole('button', { name: 'Ingresar' }).click();
+  const alert = page.getByRole('alert');
+  await expect(alert).toContainText('StockPRO no está disponible en este momento');
+  await expect(page.getByText(/internal server error/i)).toHaveCount(0);
 });

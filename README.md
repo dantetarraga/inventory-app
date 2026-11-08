@@ -76,6 +76,24 @@ La API aplica migraciones al arrancar; nginx sirve la web y hace proxy de `/api`
 - **Auditoría:** cada cambio queda registrado en `audit_log`.
 - **Productos** se eliminan de forma lógica para conservar su historial.
 
+## Contrato de respuestas de la API
+
+El front siempre sabe qué forma tiene la respuesta mirando **solo el código HTTP**:
+
+| Caso             | HTTP          | Cuerpo                                                                          |
+| ---------------- | ------------- | ------------------------------------------------------------------------------- |
+| Un recurso       | `200` / `201` | el objeto (`Product`, `User`…)                                                  |
+| Listado          | `200`         | `{ items, total, page, pageSize }` (`Paginated<T>`)                             |
+| Reporte completo | `200`         | arreglo u objeto del reporte; `?format=xlsx` devuelve el archivo                |
+| Sin contenido    | `204`         | vacío                                                                           |
+| Cualquier error  | `4xx` / `5xx` | `application/problem+json` (RFC 7807): `{ type, title, status, code, errors? }` |
+
+- `title` siempre está en español y se puede mostrar al usuario tal cual.
+- `code` es un valor cerrado (`ERROR_CODES` en `@stockpro/shared`): el front decide por `code`, nunca por el texto.
+- `errors` aparece en validaciones: `[{ path, message }]`, y se pinta en el campo correspondiente.
+- Todos los esquemas (éxito y error) están en `@stockpro/shared` y documentados en `/docs` (Swagger).
+- En el front, `ApiError` añade dos códigos propios: `NETWORK` (sin conexión) y `UNAVAILABLE` (la API no respondió).
+
 ## Estructura
 
 ```
@@ -83,7 +101,8 @@ apps/api/src
   app.ts, server.ts, env.ts
   db/            schema.ts, client.ts, migrate.ts, seed.ts   (migraciones en apps/api/drizzle)
   plugins/       auth (JWT + permisos), errors (problem+json)
-  modules/<x>/   routes.ts (+ service.ts cuando hay lógica)
+  modules/<x>/   routes.ts (HTTP) · service.ts (reglas) · repository.ts (SQL complejo)
+  modules/catalog/  routes.ts + service.ts genéricos para categorías y marcas
 apps/api/test    tests de integración (Vitest + app.inject)
 apps/web/src
   routes/        rutas file-based de TanStack Router (_app = zona autenticada)

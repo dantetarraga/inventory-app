@@ -1,37 +1,26 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { ChevronRight, CircleHelp, LogOut, Menu, Monitor, Moon, Sun, X } from 'lucide-react';
+import { LogOut, Menu, Monitor, Moon, PanelLeftClose, PanelLeftOpen, Sun, X } from 'lucide-react';
 import { ROLE_LABELS, type Theme } from '@stockpro/shared';
-import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { IconButton } from '@/components/ui/button';
 import { authApi } from '@/features/api';
 import { cn } from '@/lib/utils';
+import { storage } from '@/plugins/storage.plugin';
+import { toast } from '@/plugins/toast.plugin';
 import { hasPermission, useSession } from '@/stores/session';
 import { useTheme } from '@/stores/theme';
-import { Logo } from './auth-shell';
+import { BrandMark } from './auth-shell';
 import { MAIN_NAV, SECONDARY_NAV, type NavItem } from './nav';
 
-const SIDEBAR_KEY = 'stockpro-sidebar-open';
+const SIDEBAR_KEY = 'sidebar-open';
 
-function readSidebarOpen() {
-  try {
-    return localStorage.getItem(SIDEBAR_KEY) !== 'false';
-  } catch {
-    return true;
-  }
-}
+const THEMES: Array<{ value: Theme; label: string; icon: typeof Sun }> = [
+  { value: 'light', label: 'Tema claro', icon: Sun },
+  { value: 'dark', label: 'Tema oscuro', icon: Moon },
+  { value: 'system', label: 'Tema del sistema', icon: Monitor },
+];
 
-/** Persists the theme locally and in the user profile. */
 function useThemeChanger() {
   const setMe = useSession((s) => s.setMe);
   const { theme, setTheme } = useTheme();
@@ -51,12 +40,20 @@ function useLogout() {
   const navigate = useNavigate();
   return async () => {
     await authApi.logout();
+    toast.info('Sesión cerrada', { description: 'Vuelve a ingresar cuando lo necesites.' });
     await navigate({ to: '/login', viewTransition: true });
   };
 }
 
-/** Sidebar link in the original style: orange text + 4px orange bar when active. */
-function SideLink({
+function initials(fullName: string) {
+  return fullName
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase())
+    .join('');
+}
+
+function NavLink({
   item,
   open,
   onNavigate,
@@ -73,214 +70,149 @@ function SideLink({
       onClick={onNavigate}
       activeOptions={{ exact: item.to === '/' }}
       title={open ? undefined : item.label}
-      className="relative flex h-[60px] items-center text-foreground transition-colors hover:bg-accent"
+      className={cn(
+        'group relative flex h-10 items-center gap-3 rounded-lg text-[14px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground',
+        open ? 'px-3' : 'justify-center',
+      )}
       activeProps={{
         className:
-          '!text-primary font-semibold before:absolute before:left-0 before:h-full before:w-1 before:rounded-[10px] before:bg-primary',
+          '!bg-primary/12 !text-primary before:absolute before:-left-3 before:top-1.5 before:bottom-1.5 before:w-1 before:rounded-r-full before:bg-primary',
       }}
     >
-      <span className="flex shrink-0 px-[20px]">
-        <Icon className="size-[25px]" aria-hidden />
-      </span>
-      <span
-        className={cn(
-          'whitespace-nowrap transition-opacity duration-300',
-          open ? 'opacity-100' : 'sr-only',
-        )}
-      >
-        {item.label}
-      </span>
+      <Icon className="size-[19px] shrink-0" aria-hidden />
+      <span className={open ? 'truncate' : 'sr-only'}>{item.label}</span>
     </Link>
   );
 }
 
-function NavLinks({ open, onNavigate }: { open: boolean; onNavigate?: () => void }) {
+function ThemeSwitcher({ open }: { open: boolean }) {
+  const { theme, change } = useThemeChanger();
+  if (!open) {
+    const next = THEMES[(THEMES.findIndex((t) => t.value === theme) + 1) % THEMES.length]!;
+    const Current = THEMES.find((t) => t.value === theme)?.icon ?? Moon;
+    return (
+      <IconButton
+        className="mx-auto"
+        label={`Cambiar a ${next.label.toLowerCase()}`}
+        icon={<Current />}
+        onClick={() => change(next.value)}
+      />
+    );
+  }
+  return (
+    <div
+      role="radiogroup"
+      aria-label="Tema"
+      className="grid grid-cols-3 gap-1 rounded-lg bg-background p-1"
+    >
+      {THEMES.map(({ value, label, icon: Icon }) => (
+        <button
+          key={value}
+          type="button"
+          role="radio"
+          aria-checked={theme === value}
+          aria-label={label}
+          title={label}
+          onClick={() => change(value)}
+          className={cn(
+            'grid h-8 place-items-center rounded-md text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            theme === value && 'bg-card text-foreground shadow-sm',
+          )}
+        >
+          <Icon className="size-4" aria-hidden />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function UserBlock({ open }: { open: boolean }) {
+  const me = useSession((s) => s.me);
+  const logout = useLogout();
+  if (!me) return null;
+  return (
+    <div className={cn('flex items-center gap-3', !open && 'flex-col')}>
+      <span
+        className="grid size-9 shrink-0 place-items-center rounded-full bg-primary font-display text-[13px] font-semibold text-black"
+        title={open ? undefined : me.user.fullName}
+        aria-hidden={open}
+      >
+        {initials(me.user.fullName)}
+      </span>
+      {open && (
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[14px] font-medium leading-tight">{me.user.fullName}</p>
+          <p className="truncate text-[12px] text-muted-foreground">
+            {ROLE_LABELS[me.user.role]} en {me.company.name}
+          </p>
+        </div>
+      )}
+      <IconButton
+        variant="danger"
+        size="icon-sm"
+        label="Cerrar sesión"
+        icon={<LogOut />}
+        onClick={() => void logout()}
+      />
+    </div>
+  );
+}
+
+function SidebarContent({
+  open,
+  onNavigate,
+  headerAction,
+}: {
+  open: boolean;
+  onNavigate?: () => void;
+  headerAction?: ReactNode;
+}) {
   const me = useSession((s) => s.me);
   const visible = (items: NavItem[]) =>
     items.filter((i) => !i.module || hasPermission(me, i.module));
   return (
-    <nav aria-label="Principal">
-      {visible(MAIN_NAV).map((item) => (
-        <SideLink key={item.to} item={item} open={open} onNavigate={onNavigate} />
-      ))}
-      <div className="my-6 h-px bg-muted" />
-      {visible(SECONDARY_NAV).map((item) => (
-        <SideLink key={item.to} item={item} open={open} onNavigate={onNavigate} />
-      ))}
-    </nav>
-  );
-}
-
-/** Sun/moon switch from the original sidebar ("ToggleTema"). */
-function ThemeToggle({ open }: { open: boolean }) {
-  const { theme, change } = useThemeChanger();
-  const isDark =
-    theme === 'dark' ||
-    (theme === 'system' &&
-      typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-color-scheme: dark)').matches);
-  return (
-    <div className={cn('flex items-center py-4', open ? 'gap-3 px-[20px]' : 'justify-center')}>
-      {open && <span className="text-sm text-muted-foreground">{isDark ? 'Oscuro' : 'Claro'}</span>}
-      <button
-        type="button"
-        role="switch"
-        aria-checked={isDark}
-        aria-label="Modo oscuro"
-        onClick={() => change(isDark ? 'light' : 'dark')}
-        className="relative h-7 w-[52px] shrink-0 rounded-full bg-[#f9743b] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:bg-[rgb(52,131,235)]"
+    <div className="flex h-full flex-col px-3 py-4">
+      <div
+        className={cn('mb-6 flex items-center', open ? 'justify-between pl-1' : 'flex-col gap-3')}
       >
-        <span
-          className={cn(
-            'absolute top-0.5 grid size-6 place-items-center rounded-full bg-white text-xs shadow transition-transform',
-            isDark ? 'translate-x-[26px]' : 'translate-x-0.5',
-          )}
-        >
-          {isDark ? '🌚' : '🌞'}
-        </span>
-      </button>
-    </div>
-  );
-}
+        <Link to="/" viewTransition onClick={onNavigate} aria-label="Inicio">
+          <BrandMark className="w-9" />
+        </Link>
+        {headerAction}
+      </div>
 
-/** Orange "Cerrar sesión" card from the original sidebar. */
-function LogoutCard() {
-  const logout = useLogout();
-  return (
-    <div className="relative w-full p-4 text-center">
-      <CircleHelp
-        className="absolute left-1/2 top-0 z-10 size-12 -translate-x-1/2 rounded-full bg-sidebar p-1"
-        aria-hidden
-      />
-      <div className="relative overflow-hidden rounded-[10px] bg-primary p-4">
-        <span className="absolute -left-[50px] -top-[50px] size-[100px] rounded-full bg-brand-soft opacity-70" />
-        <span className="absolute -bottom-[80px] -right-[70px] size-[130px] rounded-full bg-brand-soft opacity-70" />
-        <h3 className="relative mt-4 py-4 text-lg font-extrabold text-black">Cerrar sesión</h3>
-        <Button className="relative bg-[#f8f2fd]" onClick={() => void logout()}>
-          Cerrar …
-        </Button>
+      <nav aria-label="Principal" className="grid gap-1">
+        {visible(MAIN_NAV).map((item) => (
+          <NavLink key={item.to} item={item} open={open} onNavigate={onNavigate} />
+        ))}
+        <div className="my-3 h-px bg-border" />
+        {visible(SECONDARY_NAV).map((item) => (
+          <NavLink key={item.to} item={item} open={open} onNavigate={onNavigate} />
+        ))}
+      </nav>
+
+      <div className="mt-auto grid min-w-0 grid-cols-1 gap-4 border-t pt-4">
+        <ThemeSwitcher open={open} />
+        <UserBlock open={open} />
       </div>
     </div>
-  );
-}
-
-function Sidebar({ open, onToggle }: { open: boolean; onToggle: () => void }) {
-  return (
-    <aside
-      className={cn(
-        'fixed inset-y-0 left-0 z-40 hidden flex-col overflow-y-auto overflow-x-hidden bg-sidebar pt-5 text-foreground transition-[width] duration-100 md:flex',
-        open ? 'w-[220px]' : 'w-[65px]',
-      )}
-    >
-      <div className="flex items-center justify-center gap-2 pb-[60px]">
-        <img
-          src="/brand/inventarioslogo.png"
-          alt=""
-          className={cn(
-            'w-[30px] animate-float transition-transform duration-300',
-            open ? 'scale-[0.9]' : 'scale-150',
-          )}
-        />
-        {open && <h2 className="text-xl font-bold">StockPRO</h2>}
-      </div>
-      <NavLinks open={open} />
-      <ThemeToggle open={open} />
-      <div className="my-6 h-px bg-muted" />
-      {open && <LogoutCard />}
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-label={open ? 'Contraer menú' : 'Expandir menú'}
-        aria-expanded={open}
-        className={cn(
-          'fixed top-[70px] z-50 grid size-8 place-items-center rounded-full bg-sidebar-toggle text-foreground shadow-[0_0_4px_var(--popover),0_0_7px_var(--sidebar)] transition-all duration-200',
-          open ? 'left-[204px] rotate-180' : 'left-[42px]',
-        )}
-      >
-        <ChevronRight className="size-4" />
-      </button>
-    </aside>
-  );
-}
-
-const THEME_OPTIONS: Array<{ value: Theme; label: string; icon: typeof Sun }> = [
-  { value: 'light', label: 'Claro', icon: Sun },
-  { value: 'dark', label: 'Oscuro', icon: Moon },
-  { value: 'system', label: 'Sistema', icon: Monitor },
-];
-
-/** Avatar pill in the top-right ("DataUser" in the original). */
-function UserMenu() {
-  const me = useSession((s) => s.me);
-  const { theme, change } = useThemeChanger();
-  const logout = useLogout();
-  if (!me) return null;
-  const initials = me.user.fullName
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((p) => p[0]?.toUpperCase())
-    .join('');
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          className="flex max-w-[220px] items-center gap-3 rounded-full p-2 pr-4 text-sm transition-colors hover:bg-popover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          aria-label="Menú de usuario"
-        >
-          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-primary text-sm font-bold text-black">
-            {initials}
-          </span>
-          <span className="hidden truncate font-medium sm:block">{me.user.fullName}</span>
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-60">
-        <DropdownMenuLabel>
-          <div className="truncate">{me.user.fullName}</div>
-          <div className="truncate text-xs font-normal text-muted-foreground">{me.user.email}</div>
-          <div className="mt-1 text-xs font-normal text-muted-foreground">
-            {ROLE_LABELS[me.user.role]} · {me.company.name}
-          </div>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-          Tema
-        </DropdownMenuLabel>
-        <DropdownMenuRadioGroup value={theme} onValueChange={(v) => change(v as Theme)}>
-          {THEME_OPTIONS.map(({ value, label, icon: Icon }) => (
-            <DropdownMenuRadioItem key={value} value={value}>
-              <Icon aria-hidden /> {label}
-            </DropdownMenuRadioItem>
-          ))}
-        </DropdownMenuRadioGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={() => void logout()}>
-          <LogOut aria-hidden /> Cerrar sesión
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
   );
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(readSidebarOpen);
+  const [open, setOpen] = useState(() => storage.get(SIDEBAR_KEY, true));
   const me = useSession((s) => s.me);
   const setTheme = useTheme((s) => s.setTheme);
 
-  // Adopt the theme saved in the user's profile after login.
   const serverTheme = me?.user.theme;
   useEffect(() => {
     if (serverTheme) setTheme(serverTheme);
   }, [serverTheme, setTheme]);
 
-  const toggleSidebar = () =>
-    setSidebarOpen((o) => {
-      try {
-        localStorage.setItem(SIDEBAR_KEY, String(!o));
-      } catch {
-        /* storage unavailable */
-      }
+  const toggle = () =>
+    setOpen((o) => {
+      storage.set(SIDEBAR_KEY, !o);
       return !o;
     });
 
@@ -293,51 +225,56 @@ export function AppShell({ children }: { children: ReactNode }) {
         Saltar al contenido
       </a>
 
-      <Sidebar open={sidebarOpen} onToggle={toggleSidebar} />
+      <aside
+        className={cn(
+          'fixed inset-y-0 left-0 z-40 hidden overflow-hidden border-r bg-sidebar transition-[width] duration-200 md:block',
+          open ? 'w-[248px]' : 'w-[72px]',
+        )}
+      >
+        <SidebarContent
+          open={open}
+          headerAction={
+            <IconButton
+              size="icon-sm"
+              label={open ? 'Contraer menú' : 'Expandir menú'}
+              aria-expanded={open}
+              icon={open ? <PanelLeftClose /> : <PanelLeftOpen />}
+              onClick={toggle}
+            />
+          }
+        />
+      </aside>
 
-      {/* Mobile drawer ("Menuambur" in the original) */}
       <DialogPrimitive.Root open={mobileOpen} onOpenChange={setMobileOpen}>
         <DialogPrimitive.Portal>
           <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-[rgba(10,9,9,0.5)] md:hidden" />
-          <DialogPrimitive.Content className="fixed inset-y-0 left-0 z-50 flex w-[260px] flex-col overflow-y-auto bg-sidebar pt-4 shadow-xl data-[state=open]:animate-in data-[state=open]:slide-in-from-left md:hidden">
+          <DialogPrimitive.Content className="fixed inset-y-0 left-0 z-50 w-[280px] bg-sidebar shadow-xl data-[state=open]:animate-in data-[state=open]:slide-in-from-left md:hidden">
             <DialogPrimitive.Title className="sr-only">Navegación</DialogPrimitive.Title>
-            <div className="mb-6 flex items-center justify-between px-4">
-              <Logo />
-              <DialogPrimitive.Close asChild>
-                <Button variant="ghost" size="icon" aria-label="Cerrar menú">
-                  <X />
-                </Button>
-              </DialogPrimitive.Close>
-            </div>
-            <NavLinks open onNavigate={() => setMobileOpen(false)} />
-            <ThemeToggle open />
-            <LogoutCard />
+            <SidebarContent
+              open
+              onNavigate={() => setMobileOpen(false)}
+              headerAction={
+                <DialogPrimitive.Close asChild>
+                  <IconButton size="icon-sm" label="Cerrar menú" icon={<X />} />
+                </DialogPrimitive.Close>
+              }
+            />
           </DialogPrimitive.Content>
         </DialogPrimitive.Portal>
       </DialogPrimitive.Root>
 
       <div
         className={cn(
-          'flex min-h-dvh min-w-0 flex-col transition-[padding] duration-100',
-          sidebarOpen ? 'md:pl-[220px]' : 'md:pl-[65px]',
+          'flex min-h-dvh min-w-0 flex-col transition-[padding] duration-200',
+          open ? 'md:pl-[248px]' : 'md:pl-[72px]',
         )}
       >
-        <header className="sticky top-0 z-30 flex h-[76px] items-center gap-2 bg-background/85 px-4 backdrop-blur md:px-8">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden"
-            onClick={() => setMobileOpen(true)}
-            aria-label="Abrir menú"
-          >
-            <Menu className="!size-6" />
-          </Button>
-          <span className="truncate text-sm font-medium md:hidden">{me?.company.name}</span>
-          <div className="ml-auto">
-            <UserMenu />
-          </div>
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b bg-background/90 px-4 backdrop-blur md:hidden">
+          <IconButton label="Abrir menú" icon={<Menu />} onClick={() => setMobileOpen(true)} />
+          <BrandMark className="w-8" />
+          <span className="truncate text-[14px] font-medium">{me?.company.name}</span>
         </header>
-        <main id="main" className="mx-auto w-full max-w-[1400px] flex-1 px-4 pb-10 md:px-8">
+        <main id="main" className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 md:px-8 md:py-8">
           {children}
         </main>
       </div>

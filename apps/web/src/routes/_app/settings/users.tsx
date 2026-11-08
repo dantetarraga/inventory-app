@@ -29,7 +29,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Field, Input, Select } from '@/components/ui/input';
+import { Field, Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { PageHeader, SearchInput } from '@/components/ui/page';
 import { usersApi } from '@/features/api';
 import { requireModule } from '@/lib/guards';
@@ -107,7 +108,6 @@ function UsersPage() {
         meta: { className: 'w-24' },
         cell: ({ row }) => (
           <RowActions
-            // Only admins manage admins (enforced by the API too).
             canEdit={isAdmin || row.original.role !== 'admin'}
             onEdit={() => editor.openEdit(row.original)}
             onDelete={
@@ -216,7 +216,6 @@ function UserDialog({
   const onSubmit = form.handleSubmit(
     async ({ email, password, permissions, status, ...values }) => {
       const perms = permissions as ModuleCode[];
-      // Validate with the exact API schemas so client and server rules match.
       const parsed = item
         ? updateUserSchema.safeParse({
             ...values,

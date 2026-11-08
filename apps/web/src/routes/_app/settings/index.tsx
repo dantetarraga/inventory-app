@@ -6,10 +6,6 @@ import { hasPermission, useSession } from '@/stores/session';
 
 export const Route = createFileRoute('/_app/settings/')({ component: SettingsIndex });
 
-/**
- * Module cards as in the original "ConfiguracionTemplate": every module is shown; the ones the
- * user can't access are locked (red border on hover) instead of hidden.
- */
 function SettingsIndex() {
   const me = useSession((s) => s.me);
   return (

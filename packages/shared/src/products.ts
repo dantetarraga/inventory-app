@@ -11,7 +11,6 @@ export const productSchema = z.object({
   salePrice: z.string(),
   purchasePrice: z.string(),
   minStock: z.string(),
-  /** Total stock across all warehouses (read-only; changes only through kardex). */
   stock: z.string(),
   isLowStock: z.boolean(),
   createdAt: z.string(),
@@ -34,7 +33,6 @@ const productFields = {
 
 export const createProductSchema = z.object({
   ...productFields,
-  /** Optional opening stock, registered as an "in" kardex movement. */
   initialStock: decimalString(3).optional(),
   warehouseId: z.number().int().positive().optional(),
 });

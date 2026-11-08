@@ -5,8 +5,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import type { z } from 'zod';
 import { updateCompanySchema, type Company } from '@stockpro/shared';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Field, Input, Select } from '@/components/ui/input';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Field, Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { PageHeader } from '@/components/ui/page';
 import { companyApi } from '@/features/api';
 import { COUNTRIES, CURRENCIES } from '@/lib/currencies';
@@ -45,9 +46,7 @@ function CompanyPage() {
       <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
         <CompanyForm company={company} />
         <Card>
-          <CardHeader>
-            <CardTitle>Resumen</CardTitle>
-          </CardHeader>
+          <CardHeader title="Resumen" />
           <CardContent>
             <dl className="grid gap-3">
               {statItems.map(([label, value]) => (
@@ -99,10 +98,10 @@ function CompanyForm({ company }: { company: Company }) {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Datos generales</CardTitle>
-        <CardDescription>La moneda se usa en precios y reportes valorizados.</CardDescription>
-      </CardHeader>
+      <CardHeader
+        title="Datos generales"
+        description="La moneda se usa en precios y reportes valorizados."
+      />
       <CardContent>
         <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2" noValidate>
           <Field

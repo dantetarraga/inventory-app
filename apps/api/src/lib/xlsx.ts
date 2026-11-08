@@ -1,11 +1,11 @@
 import ExcelJS from 'exceljs';
 import type { FastifyReply } from 'fastify';
+import { dates } from '@stockpro/shared';
 
 export interface XlsxColumn<T> {
   header: string;
   key: keyof T & string;
   width?: number;
-  /** Numeric columns are written as numbers so Excel can sum them. */
   numeric?: boolean;
 }
 
@@ -30,7 +30,7 @@ export async function sendXlsx<T extends Record<string, unknown>>(
     );
   }
   const buffer = Buffer.from(await wb.xlsx.writeBuffer());
-  const date = new Date().toISOString().slice(0, 10);
+  const date = dates.today();
   return reply
     .header('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     .header('content-disposition', `attachment; filename="${opts.filename}-${date}.xlsx"`)

@@ -3,7 +3,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
 import { FileDown, FileSpreadsheet } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/plugins/toast.plugin';
 import { z } from 'zod';
 import {
   MOVEMENT_TYPE_LABELS,
@@ -101,6 +101,7 @@ function ExportBar({
     setBusy(kind);
     try {
       await fn();
+      toast.success(kind === 'pdf' ? 'PDF descargado' : 'Excel descargado');
     } catch (err) {
       toast.error(errorMessage(err));
     } finally {
@@ -382,7 +383,6 @@ function KardexReport() {
         <div className="grid gap-1.5">
           <Label htmlFor="rk-from">Desde</Label>
           <Input
-            variant="box"
             id="rk-from"
             type="date"
             className="w-40"
@@ -394,7 +394,6 @@ function KardexReport() {
         <div className="grid gap-1.5">
           <Label htmlFor="rk-to">Hasta</Label>
           <Input
-            variant="box"
             id="rk-to"
             type="date"
             className="w-40"

@@ -12,6 +12,7 @@ import { AppError, PG, pgErrorCode } from '../../lib/errors';
 import { audit } from '../../lib/audit';
 import { likePattern, pageOffset } from '../../lib/pagination';
 import type { AuthContext } from '../../plugins/auth';
+import { dates } from '@stockpro/shared';
 
 export type CreateMovement = z.output<typeof createMovementSchema>;
 type ListMovementsQuery = z.output<typeof listMovementsQuerySchema>;
@@ -33,11 +34,7 @@ export async function resolveWarehouseId(db: DbOrTx, companyId: number, warehous
   return wh.id;
 }
 
-/**
- * Registers a stock movement. MUST run inside a transaction: the stock row is locked
- * (`SELECT … FOR UPDATE`) so concurrent movements on the same product/warehouse are serialized
- * and the `stock >= 0` check constraint guarantees we never go negative.
- */
+// Locks the stock row so concurrent movements serialize; CHECK (quantity >= 0) rejects overselling.
 export async function registerMovement(tx: Tx, ctx: AuthContext, input: CreateMovement) {
   const [product] = await tx
     .select({ id: products.id, name: products.name })
@@ -61,7 +58,6 @@ export async function registerMovement(tx: Tx, ctx: AuthContext, input: CreateMo
     .for('update');
   if (!locked) throw new Error('stock row missing after upsert');
 
-  // All arithmetic happens in Postgres numeric — no floating point in JS.
   const newQuantity =
     input.type === 'in'
       ? sql`${stock.quantity} + ${input.quantity}::numeric`
@@ -145,7 +141,7 @@ export function createKardexService(db: Database) {
     r: Awaited<ReturnType<ReturnType<typeof baseQuery>['execute']>>[number],
   ): Movement => ({
     ...r,
-    occurredAt: r.occurredAt.toISOString(),
+    occurredAt: dates.toISO(r.occurredAt),
   });
 
   return {

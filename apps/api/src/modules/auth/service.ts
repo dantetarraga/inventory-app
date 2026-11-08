@@ -8,9 +8,10 @@ import type { DbOrTx } from '../../db/client';
 import { companies, refreshTokens, userPermissions, users, warehouses } from '../../db/schema';
 import { AppError } from '../../lib/errors';
 import { effectivePermissions } from '../../plugins/auth';
+import { dates } from '@stockpro/shared';
 
 const ARGON2_OPTIONS = { memoryCost: 19456, timeCost: 2, parallelism: 1 } as const;
-// Used to keep login timing similar whether or not the email exists.
+// Verifying against a dummy hash keeps login timing equal when the email does not exist.
 const DUMMY_HASH = await hash('dummy-password-for-timing', ARGON2_OPTIONS);
 
 export const hashPassword = (password: string) => hash(password, ARGON2_OPTIONS);
@@ -33,7 +34,7 @@ export function createAuthService(app: FastifyInstance) {
   ): Promise<IssuedTokens> {
     const accessToken = app.jwt.sign({ sub: String(user.id), cid: user.companyId });
     const refreshToken = randomBytes(32).toString('base64url');
-    const refreshExpiresAt = new Date(Date.now() + env.REFRESH_TOKEN_TTL_DAYS * 86_400_000);
+    const refreshExpiresAt = dates.addDays(dates.now(), env.REFRESH_TOKEN_TTL_DAYS);
     await tx.insert(refreshTokens).values({
       userId: user.id,
       tokenHash: sha256(refreshToken),
@@ -82,7 +83,6 @@ export function createAuthService(app: FastifyInstance) {
   return {
     getMe,
 
-    /** Creates a company with its first admin user and default warehouse. */
     async register(input: z.output<typeof registerSchema>) {
       const passwordHash = await hashPassword(input.password);
       return db.transaction(async (tx) => {
@@ -132,7 +132,6 @@ export function createAuthService(app: FastifyInstance) {
       return { tokens, me: await getMe(user.id) };
     },
 
-    /** Rotates a refresh token. Reusing an already-rotated token revokes the whole family. */
     async refresh(refreshToken: string) {
       const result = await db.transaction(async (tx) => {
         const [stored] = await tx
@@ -143,17 +142,17 @@ export function createAuthService(app: FastifyInstance) {
         if (!stored) throw AppError.unauthorized('Sesión inválida');
 
         if (stored.revokedAt) {
-          // Return (not throw) so the family revocation is committed.
           await tx
             .update(refreshTokens)
-            .set({ revokedAt: new Date() })
+            .set({ revokedAt: dates.now() })
             .where(
               and(eq(refreshTokens.familyId, stored.familyId), isNull(refreshTokens.revokedAt)),
             );
           app.log.warn({ userId: stored.userId }, 'refresh token reuse detected; family revoked');
+          // Return instead of throwing so the family revocation is committed.
           return { reused: true as const };
         }
-        if (stored.expiresAt < new Date()) throw AppError.unauthorized('Sesión expirada');
+        if (stored.expiresAt < dates.now()) throw AppError.unauthorized('Sesión expirada');
 
         const [user] = await tx
           .select({ id: users.id, companyId: users.companyId, status: users.status })
@@ -163,7 +162,7 @@ export function createAuthService(app: FastifyInstance) {
 
         await tx
           .update(refreshTokens)
-          .set({ revokedAt: new Date() })
+          .set({ revokedAt: dates.now() })
           .where(eq(refreshTokens.id, stored.id));
         const tokens = await issueTokens(tx, user, stored.familyId);
         return { reused: false as const, tokens, me: await getMe(user.id, tx) };
@@ -181,7 +180,7 @@ export function createAuthService(app: FastifyInstance) {
       if (!stored) return;
       await db
         .update(refreshTokens)
-        .set({ revokedAt: new Date() })
+        .set({ revokedAt: dates.now() })
         .where(and(eq(refreshTokens.familyId, stored.familyId), isNull(refreshTokens.revokedAt)));
     },
 

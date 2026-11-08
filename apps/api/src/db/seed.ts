@@ -1,7 +1,3 @@
-/**
- * Development seed: creates a demo company with sample data.
- * Refuses to run in production. Idempotent: skips if the demo admin already exists.
- */
 import { eq, sql } from 'drizzle-orm';
 import { createDb } from './client';
 import { brands, categories, companies, products, users, warehouses } from './schema';

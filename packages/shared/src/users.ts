@@ -43,7 +43,6 @@ export type CreateUserInput = z.input<typeof createUserSchema>;
 export const updateUserSchema = z.object({
   ...userBase,
   status: z.enum(USER_STATUSES),
-  /** Leave empty to keep the current password. */
   password: passwordSchema.optional(),
 });
 export type UpdateUserInput = z.input<typeof updateUserSchema>;

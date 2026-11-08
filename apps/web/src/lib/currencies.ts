@@ -1,4 +1,3 @@
-/** Currencies offered in the UI (country is derived for the company profile). */
 export const CURRENCIES = [
   { code: 'PEN', name: 'Sol peruano', country: 'PE' },
   { code: 'USD', name: 'Dólar estadounidense', country: 'US' },

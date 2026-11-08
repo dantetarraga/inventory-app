@@ -10,7 +10,6 @@ const router = createRouter({
   routeTree,
   context: { queryClient },
   defaultPreload: 'intent',
-  // Data freshness is owned by TanStack Query.
   defaultPreloadStaleTime: 0,
   scrollRestoration: true,
 });

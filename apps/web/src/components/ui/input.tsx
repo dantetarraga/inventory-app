@@ -2,66 +2,48 @@ import * as React from 'react';
 import * as LabelPrimitive from '@radix-ui/react-label';
 import { cn } from '@/lib/utils';
 
-/**
- * Two field styles from the original app:
- * - `underline` (forms): bottom border that turns orange on focus.
- * - `box` (toolbars / filters): bordered, rounded box like the original "Buscador".
- */
-type FieldVariant = 'underline' | 'box';
+export const fieldClass = cn(
+  'w-full rounded-lg border border-field-border bg-field px-3 text-[14px] text-foreground shadow-xs outline-none',
+  'transition-[border-color,box-shadow] duration-150 placeholder:text-muted-foreground/70',
+  'hover:border-field-hover',
+  'focus-visible:border-primary focus-visible:ring-[3px] focus-visible:ring-primary/20',
+  'aria-invalid:border-destructive aria-invalid:ring-destructive/15 aria-invalid:focus-visible:ring-[3px]',
+  'disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-60',
+);
 
-const base =
-  'flex w-full text-[15px] transition-colors placeholder:text-muted-foreground/70 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50';
-const variants: Record<FieldVariant, string> = {
-  underline:
-    'rounded-none border-0 border-b-2 border-input bg-transparent px-0 py-1.5 focus-visible:border-primary focus-visible:font-semibold aria-invalid:border-destructive',
-  box: 'rounded-[10px] border border-border bg-sidebar px-3 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/25',
+type InputProps = React.ComponentProps<'input'> & {
+  leadingIcon?: React.ReactNode;
 };
 
-type WithVariant<T> = T & { variant?: FieldVariant };
-
-export function Input({
-  className,
-  type,
-  variant = 'underline',
-  ...props
-}: WithVariant<React.ComponentProps<'input'>>) {
+export function Input({ className, type, leadingIcon, ...props }: InputProps) {
+  const input = (
+    <input
+      type={type}
+      className={cn(fieldClass, 'h-10', leadingIcon && 'pl-9', !leadingIcon && className)}
+      {...props}
+    />
+  );
+  if (!leadingIcon) return input;
   return (
-    <input type={type} className={cn(base, variants[variant], 'h-10', className)} {...props} />
+    <div className={cn('relative', className)}>
+      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground [&_svg]:size-4">
+        {leadingIcon}
+      </span>
+      {input}
+    </div>
   );
 }
 
 export function Textarea({ className, ...props }: React.ComponentProps<'textarea'>) {
   return (
-    <textarea className={cn(base, variants.underline, 'min-h-16 resize-y', className)} {...props} />
-  );
-}
-
-/** Native select: accessible, keyboard friendly and works well on mobile. */
-export function Select({
-  className,
-  variant = 'underline',
-  ...props
-}: WithVariant<React.ComponentProps<'select'>>) {
-  return (
-    <select
-      className={cn(
-        base,
-        variants[variant],
-        'h-10 pr-8 [&>option]:bg-popover [&>option]:text-popover-foreground',
-        className,
-      )}
-      {...props}
-    />
+    <textarea className={cn(fieldClass, 'min-h-20 resize-y py-2', className)} {...props} />
   );
 }
 
 export function Label({ className, ...props }: React.ComponentProps<typeof LabelPrimitive.Root>) {
   return (
     <LabelPrimitive.Root
-      className={cn(
-        'text-sm font-medium leading-none text-muted-foreground peer-disabled:opacity-70',
-        className,
-      )}
+      className={cn('text-[13px] font-medium leading-none text-foreground', className)}
       {...props}
     />
   );
@@ -72,12 +54,12 @@ interface FieldProps {
   htmlFor: string;
   error?: string;
   hint?: string;
+  optional?: boolean;
   className?: string;
   children: React.ReactNode;
 }
 
-/** Label + control + error message, wired with aria-describedby. Label turns orange on focus. */
-export function Field({ label, htmlFor, error, hint, className, children }: FieldProps) {
+export function Field({ label, htmlFor, error, hint, optional, className, children }: FieldProps) {
   const describedBy = error ? `${htmlFor}-error` : hint ? `${htmlFor}-hint` : undefined;
   const control = React.isValidElement<Record<string, unknown>>(children)
     ? React.cloneElement(children, {
@@ -87,20 +69,22 @@ export function Field({ label, htmlFor, error, hint, className, children }: Fiel
       })
     : children;
   return (
-    <div className={cn('group grid gap-1', className)}>
-      <Label
-        htmlFor={htmlFor}
-        className="transition-colors group-focus-within:font-semibold group-focus-within:text-primary"
-      >
+    <div className={cn('grid content-start gap-1.5', className)}>
+      <Label htmlFor={htmlFor}>
         {label}
+        {optional && <span className="ml-1 font-normal text-muted-foreground">(opcional)</span>}
       </Label>
       {control}
       {error ? (
-        <p id={`${htmlFor}-error`} className="text-xs font-medium text-[#f46943]" role="alert">
+        <p
+          id={`${htmlFor}-error`}
+          className="text-[12.5px] font-medium text-destructive"
+          role="alert"
+        >
           {error}
         </p>
       ) : hint ? (
-        <p id={`${htmlFor}-hint`} className="text-xs text-muted-foreground">
+        <p id={`${htmlFor}-hint`} className="text-[12.5px] text-muted-foreground">
           {hint}
         </p>
       ) : null}
